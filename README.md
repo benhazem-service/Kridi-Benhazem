@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (Kriiidi)</title>
+    <title>تتبع الكريدي (Pro)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -122,7 +122,6 @@
 
     <!-- Auth Screen -->
     <div id="auth-screen">
-        
         <!-- Login -->
         <div id="login-view" class="auth-card">
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">تسجيل الدخول</h1>
@@ -141,7 +140,7 @@
         </div>
 
         <!-- Signup -->
-        <div id="signup-view" class="auth-card">
+        <div id="signup-view" class="auth-card" style="display:none;">
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">حساب جديد</h1>
             <input type="email" id="signup-email" class="auth-input" placeholder="البريد الإلكتروني" dir="ltr">
             <input type="password" id="signup-pass" class="auth-input" placeholder="كلمة المرور (6 أرقام على الأقل)" dir="ltr">
@@ -151,7 +150,7 @@
         </div>
 
         <!-- Reset -->
-        <div id="reset-view" class="auth-card">
+        <div id="reset-view" class="auth-card" style="display:none;">
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">استعادة الحساب</h1>
             <input type="email" id="reset-email" class="auth-input" placeholder="البريد الإلكتروني" dir="ltr">
             <button onclick="performReset()" class="auth-btn">إرسال الرابط</button>
@@ -218,12 +217,17 @@
     </div>
 
     <!-- Modals -->
+    <!-- Add Customer Modal with Date -->
     <div id="modal-add" class="modal-overlay hidden">
         <div class="modal-content" style="background: white;">
             <h2 class="text-xl font-black">إضافة زبون</h2>
             <input id="new-name" placeholder="الاسم الكامل">
             <input id="new-type" placeholder="نوع الكريدي (اختياري)">
             <input id="new-amount" type="number" inputmode="numeric" placeholder="المبلغ الأولي">
+            <div style="margin-bottom: 10px;">
+                <label style="font-size:0.8rem; font-weight:bold; color:var(--text-sub); display:block; margin-bottom:5px;">تاريخ العملية (اختياري)</label>
+                <input id="new-date" type="date">
+            </div>
             <div class="flex gap-2" style="margin-top: 10px;">
                 <button onclick="saveCustomer()" class="btn-primary">حفظ في السحابة</button>
                 <button onclick="closeModal('modal-add')" class="btn-secondary">إلغاء</button>
@@ -259,9 +263,20 @@
                 <h3 class="font-bold text-sm text-sub" style="margin-bottom: 10px;">سجل العمليات (التفاصيل)</h3>
                 <div id="d-history" class="history-section"></div>
             </div>
-            <button onclick="deleteCustomer()" style="color: var(--danger); background: white; padding: 1rem; border-radius: 12px; font-weight: bold; border: 2px solid var(--danger-light); display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; cursor:pointer;">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg> حذف الزبون (1988)
+            <button onclick="requestPinToDelete()" style="color: var(--danger); background: white; padding: 1rem; border-radius: 12px; font-weight: bold; border: 2px solid var(--danger-light); display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; cursor:pointer;">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg> حذف الزبون
             </button>
+        </div>
+    </div>
+
+    <!-- PIN Confirmation Modal -->
+    <div id="modal-pin" class="modal-overlay hidden">
+        <div class="modal-content" style="background: white; max-width: 350px;">
+            <h2 class="text-xl font-black text-center" style="color: var(--danger);">تأكيد الحذف</h2>
+            <p style="text-align:center; color:var(--text-sub); font-size:0.9rem; margin-bottom:15px;">أدخل الرمز السري لإتمام العملية</p>
+            <input type="password" id="pin-input" placeholder="الرمز السري" dir="ltr" style="text-align:center; letter-spacing: 5px; font-size: 1.5rem;">
+            <button onclick="confirmDeleteCustomer()" class="btn-primary" style="background: var(--danger); margin-top:10px;">حذف نهائي</button>
+            <button onclick="closeModal('modal-pin')" class="btn-secondary" style="margin-top:10px;">إلغاء</button>
         </div>
     </div>
 
@@ -288,7 +303,6 @@
 
     <!-- Logic -->
     <script>
-        // === تحديث البيانات (kriiidi) ===
         const firebaseConfig = {
             apiKey: "AIzaSyAcTJZNbTFrHwuaAqzCkkSm_HUm_ZSlFbk",
             authDomain: "kriiidi.firebaseapp.com",
@@ -303,7 +317,6 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // تفعيل التخزين المؤقت (Persistence)
         db.enablePersistence().catch(err => {
             if (err.code == 'failed-precondition') console.log("Persistence failed: multiple tabs open");
             else if (err.code == 'unimplemented') console.log("Persistence not supported by browser");
@@ -311,7 +324,6 @@
 
         let customers = [], reminders = [], settings = {warn: 30, danger: 45}, currentId = null, transMode = 'take';
 
-        // Helpers
         function showLoading() { document.getElementById('loading-bar').style.width = '70%'; }
         function hideLoading() { document.getElementById('loading-bar').style.width = '100%'; setTimeout(()=> document.getElementById('loading-bar').style.width='0%', 300); }
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -340,49 +352,29 @@
             const pass = document.getElementById('login-pass').value;
             const remember = document.getElementById('remember-me').checked;
             const msg = document.getElementById('login-msg');
-            
             if(!email || !pass) { msg.innerText = "يرجى ملء البيانات"; msg.style.display = 'block'; return; }
             msg.style.display = 'none'; showLoading();
-
             const persistence = remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
-
-            auth.setPersistence(persistence)
-                .then(() => auth.signInWithEmailAndPassword(email, pass))
-                .catch((error) => {
-                    hideLoading();
-                    let arMsg = "خطأ في الدخول";
-                    if(error.code === 'auth/user-not-found') arMsg = "المستخدم غير موجود";
-                    if(error.code === 'auth/wrong-password') arMsg = "كلمة المرور خاطئة";
-                    msg.innerText = arMsg;
-                    msg.style.display = 'block';
-                });
+            auth.setPersistence(persistence).then(() => auth.signInWithEmailAndPassword(email, pass)).catch((error) => {
+                hideLoading(); msg.innerText = "خطأ في البريد أو كلمة المرور"; msg.style.display = 'block';
+            });
         }
 
         function performSignup() {
             const email = document.getElementById('signup-email').value;
             const pass = document.getElementById('signup-pass').value;
             const msg = document.getElementById('signup-msg');
-            if(!email || !pass) return;
-            showLoading();
-            auth.createUserWithEmailAndPassword(email, pass).catch(e => {
-                hideLoading();
-                msg.innerText = e.message;
-                msg.style.display = 'block';
-            });
+            if(!email || !pass) { msg.innerText = "يرجى ملء البيانات"; msg.style.display = 'block'; return; }
+            msg.style.display = 'none'; showLoading();
+            auth.createUserWithEmailAndPassword(email, pass).catch(e => { hideLoading(); msg.innerText = e.message; msg.style.display = 'block'; });
         }
 
         function performReset() {
             const email = document.getElementById('reset-email').value;
-            if(!email) return;
-            showLoading();
-            auth.sendPasswordResetEmail(email).then(() => {
-                hideLoading();
-                document.getElementById('reset-success').style.display = 'block';
-            }).catch(e => {
-                hideLoading();
-                document.getElementById('reset-msg').innerText = e.message;
-                document.getElementById('reset-msg').style.display = 'block';
-            });
+            const msg = document.getElementById('reset-msg'); const suc = document.getElementById('reset-success');
+            if(!email) { msg.innerText = "أدخل البريد الإلكتروني"; msg.style.display = 'block'; return; }
+            msg.style.display = 'none'; suc.style.display = 'none'; showLoading();
+            auth.sendPasswordResetEmail(email).then(() => { hideLoading(); suc.innerText = "تم إرسال الرابط."; suc.style.display = 'block'; }).catch((error) => { hideLoading(); msg.innerText = "البريد غير مسجل"; msg.style.display = 'block'; });
         }
 
         function logout() { auth.signOut(); }
@@ -390,18 +382,9 @@
         // --- APP LOGIC ---
         function initApp() {
             showLoading();
-            db.collection("customers").onSnapshot(snap => {
-                customers = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                renderAll(); hideLoading();
-            });
-            db.collection("reminders").onSnapshot(snap => {
-                reminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                renderReminders();
-            });
-            db.collection("config").doc("settings").onSnapshot(doc => {
-                if(doc.exists) settings = doc.data();
-                else db.collection("config").doc("settings").set(settings);
-            });
+            db.collection("customers").onSnapshot(snap => { customers = snap.docs.map(doc => ({id: doc.id, ...doc.data()})); renderAll(); hideLoading(); });
+            db.collection("reminders").onSnapshot(snap => { reminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()})); renderReminders(); });
+            db.collection("config").doc("settings").onSnapshot(doc => { if(doc.exists) settings = doc.data(); else db.collection("config").doc("settings").set(settings); });
         }
 
         function getBal(c) { if(!c.transactions) return 0; return c.transactions.reduce((a,t)=> t.type==='take'?a+t.amount:a-t.amount, 0); }
@@ -463,19 +446,45 @@
 
         // --- CRUD ---
         function saveCustomer() {
-            const n = document.getElementById('new-name').value; const t = document.getElementById('new-type').value; const a = parseFloat(document.getElementById('new-amount').value);
+            const n = document.getElementById('new-name').value;
+            const t = document.getElementById('new-type').value;
+            const a = parseFloat(document.getElementById('new-amount').value);
+            const dateInput = document.getElementById('new-date').value; // جلب التاريخ المختار
+            
             if(!n) return alert('أدخل الاسم');
+            
+            // تحديد تاريخ العملية: إذا اختار المستخدم تاريخاً نستخدمه، وإلا نستخدم الوقت الحالي
+            const transactionDate = dateInput ? new Date(dateInput).toISOString() : new Date().toISOString();
+
             showLoading();
-            db.collection("customers").add({ name: n, type: t, createdAt: new Date().toISOString(), transactions: a ? [{id:Date.now()+'t', amount:a, type:'take', note:'رصيد افتتاحي', date:new Date().toISOString()}] : [] })
-            .then(() => { hideLoading(); closeModal('modal-add'); document.getElementById('new-name').value = ''; document.getElementById('new-type').value = ''; document.getElementById('new-amount').value = ''; });
+            db.collection("customers").add({
+                name: n, 
+                type: t, 
+                createdAt: new Date().toISOString(), 
+                transactions: a ? [{id:Date.now()+'t', amount:a, type:'take', note:'رصيد افتتاحي', date: transactionDate}] : [] 
+            })
+            .then(() => { 
+                hideLoading(); 
+                closeModal('modal-add'); 
+                document.getElementById('new-name').value = ''; 
+                document.getElementById('new-type').value = ''; 
+                document.getElementById('new-amount').value = ''; 
+                document.getElementById('new-date').value = ''; // تصفير التاريخ
+            });
         }
+
         function addReminder() {
             const n = document.getElementById('rem-name').value; const c = document.getElementById('rem-count').value;
             if(!n) return;
             db.collection("reminders").add({name:n, count:c});
             document.getElementById('rem-name').value = ''; document.getElementById('rem-count').value = '';
         }
-        function delReminder(id) { db.collection("reminders").doc(id).delete(); }
+        function delReminder(id) { 
+            if(confirm("هل أنت متأكد من حذف هذا المنتج؟")) {
+                db.collection("reminders").doc(id).delete(); 
+            }
+        }
+
         function openDetails(id) { currentId = id; const c = customers.find(x => x.id === id); if(!c) return; document.getElementById('d-name').innerText = c.name; document.getElementById('d-type').innerText = c.type || 'عام'; renderDetails(c); openModal('modal-details'); }
         function renderDetails(c) {
             document.getElementById('d-balance').innerText = getBal(c).toLocaleString();
@@ -492,11 +501,31 @@
             const c = customers.find(x => x.id === currentId); const newTrans = [...(c.transactions || []), { id: Date.now().toString(), amount:a, type:transMode, note:n, date: new Date().toISOString() }];
             showLoading(); db.collection("customers").doc(currentId).update({ transactions: newTrans }).then(() => { hideLoading(); document.getElementById('t-amount').value = ''; document.getElementById('t-note').value = ''; });
         }
-        function deleteCustomer() {
-            if(!confirm('هل أنت متأكد من حذف الزبون وجميع سجلاته؟')) return;
-            const pin = prompt('لإتمام الحذف، المرجو إدخال الرمز السري:');
-            if(pin === '1988') { showLoading(); db.collection("customers").doc(currentId).delete().then(() => { hideLoading(); closeModal('modal-details'); alert('تم الحذف بنجاح.'); }); } else if (pin !== null) { alert('خطأ: الرمز السري غير صحيح!'); }
+
+        // --- New Secure Delete Functions ---
+        function requestPinToDelete() {
+            // عرض نافذة إدخال الرمز السري بدلاً من prompt
+            document.getElementById('pin-input').value = ''; // تصفير الحقل
+            openModal('modal-pin');
         }
+
+        function confirmDeleteCustomer() {
+            const enteredPin = document.getElementById('pin-input').value;
+            
+            if(enteredPin === '1988') {
+                showLoading();
+                db.collection("customers").doc(currentId).delete().then(() => { 
+                    hideLoading(); 
+                    closeModal('modal-pin'); // إغلاق نافذة الرمز
+                    closeModal('modal-details'); // إغلاق تفاصيل الزبون
+                    alert('تم الحذف بنجاح.'); 
+                });
+            } else {
+                alert('خطأ: الرمز السري غير صحيح!');
+                document.getElementById('pin-input').value = ''; // إعادة المحاولة
+            }
+        }
+
         function openStatsModal(view) {
             const list = document.getElementById('stats-list'); const title = document.getElementById('stats-title'); let data = [];
             if(view === 'debtors') { title.innerText = "قائمة المدينين"; data = customers.filter(c => getBal(c) > 0).sort((a,b) => getBal(b) - getBal(a)); } else { title.innerText = "قائمة الخالصين"; data = customers.filter(c => getBal(c) <= 0); }
