@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (Pro)</title>
+    <title>تتبع الكريدي (النسخة النهائية)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -269,7 +269,7 @@
         </div>
     </div>
 
-    <!-- PIN Confirmation Modal -->
+    <!-- PIN Confirmation Modal (Hidden Input) -->
     <div id="modal-pin" class="modal-overlay hidden">
         <div class="modal-content" style="background: white; max-width: 350px;">
             <h2 class="text-xl font-black text-center" style="color: var(--danger);">تأكيد الحذف</h2>
@@ -277,6 +277,18 @@
             <input type="password" id="pin-input" placeholder="الرمز السري" dir="ltr" style="text-align:center; letter-spacing: 5px; font-size: 1.5rem;">
             <button onclick="confirmDeleteCustomer()" class="btn-primary" style="background: var(--danger); margin-top:10px;">حذف نهائي</button>
             <button onclick="closeModal('modal-pin')" class="btn-secondary" style="margin-top:10px;">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- Reminder Delete Confirmation Modal -->
+    <div id="modal-delete-reminder" class="modal-overlay hidden">
+        <div class="modal-content" style="background: white; max-width: 350px;">
+            <h2 class="text-xl font-black text-center" style="color: var(--danger);">حذف المنتج</h2>
+            <p class="text-center text-sub">هل أنت متأكد من حذف هذا المنتج من القائمة؟</p>
+            <div class="flex gap-2 mt-4">
+                <button onclick="confirmDeleteRem()" class="btn-primary" style="background:var(--danger)">حذف</button>
+                <button onclick="closeModal('modal-delete-reminder')" class="btn-secondary">إلغاء</button>
+            </div>
         </div>
     </div>
 
@@ -323,6 +335,7 @@
         });
 
         let customers = [], reminders = [], settings = {warn: 30, danger: 45}, currentId = null, transMode = 'take';
+        let reminderToDelete = null;
 
         function showLoading() { document.getElementById('loading-bar').style.width = '70%'; }
         function hideLoading() { document.getElementById('loading-bar').style.width = '100%'; setTimeout(()=> document.getElementById('loading-bar').style.width='0%', 300); }
@@ -409,7 +422,7 @@
             list.innerHTML = reminders.map(r => `
                 <div class="reminder-item">
                     <div class="font-bold">${r.name} ${r.count ? `<span style="background:#dbeafe;color:#1e40af;padding:2px 6px;border-radius:6px;font-size:0.8rem">${r.count}</span>` : ''}</div>
-                    <button onclick="delReminder('${r.id}')" style="color:#ef4444;border:none;background:none;cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+                    <button onclick="askDeleteReminder('${r.id}')" style="color:#ef4444;border:none;background:none;cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
                 </div>
             `).join('') || '<div class="text-xs text-sub text-center">القائمة فارغة</div>';
         }
@@ -449,11 +462,10 @@
             const n = document.getElementById('new-name').value;
             const t = document.getElementById('new-type').value;
             const a = parseFloat(document.getElementById('new-amount').value);
-            const dateInput = document.getElementById('new-date').value; // جلب التاريخ المختار
+            const dateInput = document.getElementById('new-date').value;
             
             if(!n) return alert('أدخل الاسم');
             
-            // تحديد تاريخ العملية: إذا اختار المستخدم تاريخاً نستخدمه، وإلا نستخدم الوقت الحالي
             const transactionDate = dateInput ? new Date(dateInput).toISOString() : new Date().toISOString();
 
             showLoading();
@@ -469,7 +481,7 @@
                 document.getElementById('new-name').value = ''; 
                 document.getElementById('new-type').value = ''; 
                 document.getElementById('new-amount').value = ''; 
-                document.getElementById('new-date').value = ''; // تصفير التاريخ
+                document.getElementById('new-date').value = '';
             });
         }
 
@@ -479,9 +491,17 @@
             db.collection("reminders").add({name:n, count:c});
             document.getElementById('rem-name').value = ''; document.getElementById('rem-count').value = '';
         }
-        function delReminder(id) { 
-            if(confirm("هل أنت متأكد من حذف هذا المنتج؟")) {
-                db.collection("reminders").doc(id).delete(); 
+
+        // New Reminder Delete Logic
+        function askDeleteReminder(id) {
+            reminderToDelete = id;
+            openModal('modal-delete-reminder');
+        }
+
+        function confirmDeleteRem() {
+            if(reminderToDelete) {
+                db.collection("reminders").doc(reminderToDelete).delete();
+                closeModal('modal-delete-reminder');
             }
         }
 
@@ -502,27 +522,25 @@
             showLoading(); db.collection("customers").doc(currentId).update({ transactions: newTrans }).then(() => { hideLoading(); document.getElementById('t-amount').value = ''; document.getElementById('t-note').value = ''; });
         }
 
-        // --- New Secure Delete Functions ---
+        // New Secure Delete Logic
         function requestPinToDelete() {
-            // عرض نافذة إدخال الرمز السري بدلاً من prompt
-            document.getElementById('pin-input').value = ''; // تصفير الحقل
+            document.getElementById('pin-input').value = '';
             openModal('modal-pin');
         }
 
         function confirmDeleteCustomer() {
             const enteredPin = document.getElementById('pin-input').value;
-            
             if(enteredPin === '1988') {
                 showLoading();
                 db.collection("customers").doc(currentId).delete().then(() => { 
                     hideLoading(); 
-                    closeModal('modal-pin'); // إغلاق نافذة الرمز
-                    closeModal('modal-details'); // إغلاق تفاصيل الزبون
+                    closeModal('modal-pin'); 
+                    closeModal('modal-details'); 
                     alert('تم الحذف بنجاح.'); 
                 });
             } else {
                 alert('خطأ: الرمز السري غير صحيح!');
-                document.getElementById('pin-input').value = ''; // إعادة المحاولة
+                document.getElementById('pin-input').value = '';
             }
         }
 
