@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (Pro + اليومية)</title>
+    <title>تتبع الكريدي (Pro + الإعدادات)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -114,6 +114,19 @@
         .trans-give .amount-val { color: var(--success); }
         .trans-give .amount-label { background: var(--success-light); color: var(--success); }
         .stat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); cursor: pointer; background: white; }
+
+        /* PRINT STYLES */
+        #print-area { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { display: block; position: absolute; left: 0; top: 0; width: 100%; background: white; padding: 20px; direction: rtl; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #000; padding: 10px; text-align: right; font-size: 14px; }
+            th { background-color: #f0f0f0; }
+            .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .print-total { margin-top: 20px; font-weight: bold; text-align: left; font-size: 18px; }
+        }
     </style>
 </head>
 <body>
@@ -127,18 +140,12 @@
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">تسجيل الدخول</h1>
             <input type="email" id="login-email" class="auth-input" placeholder="البريد الإلكتروني" dir="ltr">
             <input type="password" id="login-pass" class="auth-input" placeholder="كلمة المرور" dir="ltr">
-            
-            <div class="checkbox-container">
-                <input type="checkbox" id="remember-me" checked>
-                <label for="remember-me">تذكرني (حفظ الدخول)</label>
-            </div>
-
+            <div class="checkbox-container"><input type="checkbox" id="remember-me" checked><label for="remember-me">تذكرني (حفظ الدخول)</label></div>
             <button onclick="performLogin()" class="auth-btn">دخول</button>
             <div onclick="showView('signup')" class="auth-link">إنشاء حساب جديد</div>
             <div onclick="showView('reset')" class="auth-link" style="color: var(--text-sub);">نسيت كلمة السر؟</div>
             <p id="login-msg" class="error-msg"></p>
         </div>
-
         <!-- Signup -->
         <div id="signup-view" class="auth-card" style="display:none;">
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">حساب جديد</h1>
@@ -148,7 +155,6 @@
             <div onclick="showView('login')" class="auth-link">لديك حساب؟ تسجيل الدخول</div>
             <p id="signup-msg" class="error-msg"></p>
         </div>
-
         <!-- Reset -->
         <div id="reset-view" class="auth-card" style="display:none;">
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">استعادة الحساب</h1>
@@ -169,9 +175,20 @@
                 </div>
                 <h1 class="font-black text-xl" style="color: var(--text-main); margin:0;">تتبع الكريدي <span style="font-size:0.7rem; color:white; background:var(--success); padding:2px 8px; border-radius:10px; vertical-align:middle;">Kriiidi</span></h1>
             </div>
-            <button onclick="logout()" style="background: #fee2e2; color: #dc2626; padding: 8px; border-radius: 50%; border: none; cursor:pointer;" title="تسجيل الخروج">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            </button>
+            <div class="flex gap-2">
+                <!-- زر الطباعة -->
+                <button onclick="openPrintModal()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;">
+                    <svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                </button>
+                <!-- زر الإعدادات (تمت إعادته) -->
+                <button onclick="openSettings()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <!-- زر الخروج -->
+                <button onclick="logout()" style="background: #fee2e2; color: #dc2626; padding: 8px; border-radius: 50%; border: none; cursor:pointer;" title="تسجيل الخروج">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                </button>
+            </div>
         </header>
 
         <div class="stats-container">
@@ -216,8 +233,27 @@
         </button>
     </div>
 
-    <!-- Modals -->
-    <!-- Add Customer Modal with Date -->
+    <!-- === MODALS === -->
+
+    <!-- Print Options Modal -->
+    <div id="modal-print" class="modal-overlay hidden">
+        <div class="modal-content" style="background: white; max-width: 400px;">
+            <h2 class="text-xl font-black mb-4">خيارات الطباعة</h2>
+            <div class="flex flex-col gap-3">
+                <button onclick="generateReport('all')" class="btn-primary" style="background: #0f172a;">طباعة تقرير الديون الشامل</button>
+                <div style="border-top:1px solid #eee; margin:10px 0;"></div>
+                <label class="text-sm font-bold text-sub">أو طباعة عمليات شهر محدد:</label>
+                <input type="month" id="print-month" class="auth-input">
+                <button onclick="generateReport('month')" class="btn-primary">طباعة عمليات الشهر</button>
+                <button onclick="closeModal('modal-print')" class="btn-secondary">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Print Area -->
+    <div id="print-area"></div>
+
+    <!-- Add Customer Modal -->
     <div id="modal-add" class="modal-overlay hidden">
         <div class="modal-content" style="background: white;">
             <h2 class="text-xl font-black">إضافة زبون</h2>
@@ -259,12 +295,9 @@
                 <input id="t-amount" type="number" inputmode="numeric" placeholder="المبلغ" style="flex: 1;">
                 <input id="t-note" type="text" placeholder="ملاحظة" style="flex: 1.5;">
             </div>
-            
-            <!-- NEW: Date input inside transaction details -->
             <div style="margin-bottom: 10px;">
                 <input id="t-date" type="date" style="width:100%; border:1px solid #e2e8f0; font-size:0.9rem;" title="اختر تاريخ للعملية القديمة">
             </div>
-
             <button onclick="addTransaction()" class="btn-primary" style="padding: 1rem;">تسجيل العملية</button>
             <div style="margin-top: 10px;">
                 <h3 class="font-bold text-sm text-sub" style="margin-bottom: 10px;">سجل العمليات (التفاصيل)</h3>
@@ -276,7 +309,7 @@
         </div>
     </div>
 
-    <!-- PIN Confirmation Modal (Hidden Input) -->
+    <!-- PIN Modal -->
     <div id="modal-pin" class="modal-overlay hidden">
         <div class="modal-content" style="background: white; max-width: 350px;">
             <h2 class="text-xl font-black text-center" style="color: var(--danger);">تأكيد الحذف</h2>
@@ -287,7 +320,7 @@
         </div>
     </div>
 
-    <!-- Reminder Delete Confirmation Modal -->
+    <!-- Delete Reminder Modal -->
     <div id="modal-delete-reminder" class="modal-overlay hidden">
         <div class="modal-content" style="background: white; max-width: 350px;">
             <h2 class="text-xl font-black text-center" style="color: var(--danger);">حذف المنتج</h2>
@@ -299,6 +332,7 @@
         </div>
     </div>
 
+    <!-- Stats Modal -->
     <div id="modal-stats" class="modal-overlay hidden">
         <div class="modal-content" style="background: white;">
             <div class="flex justify-between items-center">
@@ -309,6 +343,7 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
     <div id="modal-settings" class="modal-overlay hidden">
         <div class="modal-content" style="background: white;">
             <h2 class="text-xl font-black">الإعدادات</h2>
@@ -336,10 +371,7 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        db.enablePersistence().catch(err => {
-            if (err.code == 'failed-precondition') console.log("Persistence failed: multiple tabs open");
-            else if (err.code == 'unimplemented') console.log("Persistence not supported by browser");
-        });
+        db.enablePersistence().catch(err => console.log(err.code));
 
         let customers = [], reminders = [], settings = {warn: 30, danger: 45}, currentId = null, transMode = 'take';
         let reminderToDelete = null;
@@ -499,31 +531,14 @@
             document.getElementById('rem-name').value = ''; document.getElementById('rem-count').value = '';
         }
 
-        // New Reminder Delete Logic
-        function askDeleteReminder(id) {
-            reminderToDelete = id;
-            openModal('modal-delete-reminder');
-        }
-
-        function confirmDeleteRem() {
-            if(reminderToDelete) {
-                db.collection("reminders").doc(reminderToDelete).delete();
-                closeModal('modal-delete-reminder');
-            }
-        }
+        function askDeleteReminder(id) { reminderToDelete = id; openModal('modal-delete-reminder'); }
+        function confirmDeleteRem() { if(reminderToDelete) { db.collection("reminders").doc(reminderToDelete).delete(); closeModal('modal-delete-reminder'); } }
 
         function openDetails(id) { 
-            currentId = id; 
-            const c = customers.find(x => x.id === id); 
-            if(!c) return; 
-            document.getElementById('d-name').innerText = c.name; 
-            document.getElementById('d-type').innerText = c.type || 'عام'; 
-            
-            // تصفير خانة التاريخ عند الفتح
-            document.getElementById('t-date').value = '';
-            
-            renderDetails(c); 
-            openModal('modal-details'); 
+            currentId = id; const c = customers.find(x => x.id === id); if(!c) return; 
+            document.getElementById('d-name').innerText = c.name; document.getElementById('d-type').innerText = c.type || 'عام'; 
+            document.getElementById('t-date').value = ''; // Reset date
+            renderDetails(c); openModal('modal-details'); 
         }
 
         function renderDetails(c) {
@@ -543,7 +558,6 @@
             
             if(!a || !currentId) return;
             
-            // استخدام التاريخ المختار أو التاريخ الحالي
             const transDate = dVal ? new Date(dVal).toISOString() : new Date().toISOString();
 
             const c = customers.find(x => x.id === currentId); 
@@ -560,30 +574,70 @@
                 hideLoading(); 
                 document.getElementById('t-amount').value = ''; 
                 document.getElementById('t-note').value = ''; 
-                document.getElementById('t-date').value = ''; // تصفير التاريخ
+                document.getElementById('t-date').value = '';
             });
         }
 
-        // New Secure Delete Logic
-        function requestPinToDelete() {
-            document.getElementById('pin-input').value = '';
-            openModal('modal-pin');
-        }
-
+        function requestPinToDelete() { document.getElementById('pin-input').value = ''; openModal('modal-pin'); }
         function confirmDeleteCustomer() {
             const enteredPin = document.getElementById('pin-input').value;
             if(enteredPin === '1988') {
                 showLoading();
-                db.collection("customers").doc(currentId).delete().then(() => { 
-                    hideLoading(); 
-                    closeModal('modal-pin'); 
-                    closeModal('modal-details'); 
-                    alert('تم الحذف بنجاح.'); 
+                db.collection("customers").doc(currentId).delete().then(() => { hideLoading(); closeModal('modal-pin'); closeModal('modal-details'); alert('تم الحذف بنجاح.'); });
+            } else { alert('خطأ: الرمز السري غير صحيح!'); document.getElementById('pin-input').value = ''; }
+        }
+
+        // --- Print Logic ---
+        function openPrintModal() { openModal('modal-print'); }
+        function generateReport(type) {
+            const printArea = document.getElementById('print-area');
+            const date = new Date().toLocaleDateString('ar-MA');
+            let totalDebt = 0;
+            let rows = '';
+            let title = '';
+
+            if (type === 'all') {
+                title = 'تقرير الديون الشامل';
+                const debtors = customers.filter(c => getBal(c) > 0);
+                debtors.forEach(c => {
+                    const b = getBal(c);
+                    totalDebt += b;
+                    rows += `<tr><td>${c.name}</td><td>${c.type || '-'}</td><td style="font-weight:bold">${b.toLocaleString()}</td></tr>`;
                 });
-            } else {
-                alert('خطأ: الرمز السري غير صحيح!');
-                document.getElementById('pin-input').value = '';
+            } else if (type === 'month') {
+                const mInput = document.getElementById('print-month').value; 
+                if(!mInput) return alert("المرجو تحديد الشهر");
+                title = `تقرير شهر ${mInput}`;
+                
+                customers.forEach(c => {
+                    const monthlyTrans = c.transactions.filter(t => t.date.startsWith(mInput));
+                    if(monthlyTrans.length > 0) {
+                        let took = 0; let paid = 0;
+                        monthlyTrans.forEach(t => { if(t.type==='take') took += t.amount; else paid += t.amount; });
+                        rows += `<tr><td>${c.name}</td><td>${took.toLocaleString()}</td><td>${paid.toLocaleString()}</td><td>${(took-paid).toLocaleString()}</td></tr>`;
+                        totalDebt += (took - paid);
+                    }
+                });
             }
+
+            let tableHeader = type === 'all' 
+                ? `<tr><th>الاسم</th><th>النوع</th><th>المبلغ المتبقي</th></tr>` 
+                : `<tr><th>الاسم</th><th>أخذ (كريدي)</th><th>دفع</th><th>الصافي</th></tr>`;
+
+            printArea.innerHTML = `
+                <div class="print-header">
+                    <h1>تتبع الكريدي - ${title}</h1>
+                    <p>تاريخ الطباعة: ${date}</p>
+                </div>
+                <table>
+                    <thead>${tableHeader}</thead>
+                    <tbody>${rows || '<tr><td colspan="3">لا توجد بيانات</td></tr>'}</tbody>
+                </table>
+                <div class="print-total">المجموع الكلي: ${totalDebt.toLocaleString()} د.م</div>
+            `;
+
+            closeModal('modal-print');
+            window.print();
         }
 
         function openStatsModal(view) {
