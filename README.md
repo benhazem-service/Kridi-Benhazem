@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (النسخة النهائية)</title>
+    <title>تتبع الكريدي (Pro + اليومية)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -225,7 +225,7 @@
             <input id="new-type" placeholder="نوع الكريدي (اختياري)">
             <input id="new-amount" type="number" inputmode="numeric" placeholder="المبلغ الأولي">
             <div style="margin-bottom: 10px;">
-                <label style="font-size:0.8rem; font-weight:bold; color:var(--text-sub); display:block; margin-bottom:5px;">تاريخ العملية (اختياري)</label>
+                <label style="font-size:0.8rem; font-weight:bold; color:var(--text-sub); display:block; margin-bottom:5px;">تاريخ (اختياري)</label>
                 <input id="new-date" type="date">
             </div>
             <div class="flex gap-2" style="margin-top: 10px;">
@@ -235,6 +235,7 @@
         </div>
     </div>
 
+    <!-- Customer Details Modal -->
     <div id="modal-details" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="flex justify-between items-start" style="background: white; padding: 1rem; margin: -1.5rem -1.5rem 0 -1.5rem; border-bottom: 1px solid var(--border); position: sticky; top: -1.5rem; z-index: 10;">
@@ -256,8 +257,14 @@
             </div>
             <div class="flex gap-2">
                 <input id="t-amount" type="number" inputmode="numeric" placeholder="المبلغ" style="flex: 1;">
-                <input id="t-note" type="text" placeholder="ملاحظة (مثال: سكر)" style="flex: 1.5;">
+                <input id="t-note" type="text" placeholder="ملاحظة" style="flex: 1.5;">
             </div>
+            
+            <!-- NEW: Date input inside transaction details -->
+            <div style="margin-bottom: 10px;">
+                <input id="t-date" type="date" style="width:100%; border:1px solid #e2e8f0; font-size:0.9rem;" title="اختر تاريخ للعملية القديمة">
+            </div>
+
             <button onclick="addTransaction()" class="btn-primary" style="padding: 1rem;">تسجيل العملية</button>
             <div style="margin-top: 10px;">
                 <h3 class="font-bold text-sm text-sub" style="margin-bottom: 10px;">سجل العمليات (التفاصيل)</h3>
@@ -505,7 +512,20 @@
             }
         }
 
-        function openDetails(id) { currentId = id; const c = customers.find(x => x.id === id); if(!c) return; document.getElementById('d-name').innerText = c.name; document.getElementById('d-type').innerText = c.type || 'عام'; renderDetails(c); openModal('modal-details'); }
+        function openDetails(id) { 
+            currentId = id; 
+            const c = customers.find(x => x.id === id); 
+            if(!c) return; 
+            document.getElementById('d-name').innerText = c.name; 
+            document.getElementById('d-type').innerText = c.type || 'عام'; 
+            
+            // تصفير خانة التاريخ عند الفتح
+            document.getElementById('t-date').value = '';
+            
+            renderDetails(c); 
+            openModal('modal-details'); 
+        }
+
         function renderDetails(c) {
             document.getElementById('d-balance').innerText = getBal(c).toLocaleString();
             document.getElementById('d-history').innerHTML = [...c.transactions].reverse().map(t => `
@@ -515,11 +535,33 @@
                 </div>`).join('');
         }
         function setTransMode(m) { transMode = m; const bT = document.getElementById('btn-take'); const bG = document.getElementById('btn-give'); if(m === 'take') { bT.style.borderColor = '#ef4444'; bT.style.background = '#fef2f2'; bT.style.color = '#ef4444'; bG.style.borderColor = '#e2e8f0'; bG.style.background = 'white'; bG.style.color = '#0f172a'; } else { bG.style.borderColor = '#22c55e'; bG.style.background = '#f0fdf4'; bG.style.color = '#22c55e'; bT.style.borderColor = '#e2e8f0'; bT.style.background = 'white'; bT.style.color = '#0f172a'; } }
+        
         function addTransaction() {
-            const a = parseFloat(document.getElementById('t-amount').value); const n = document.getElementById('t-note').value || (transMode==='take'?'كريدي':'دفعة');
+            const a = parseFloat(document.getElementById('t-amount').value); 
+            const n = document.getElementById('t-note').value || (transMode==='take'?'كريدي':'دفعة');
+            const dVal = document.getElementById('t-date').value;
+            
             if(!a || !currentId) return;
-            const c = customers.find(x => x.id === currentId); const newTrans = [...(c.transactions || []), { id: Date.now().toString(), amount:a, type:transMode, note:n, date: new Date().toISOString() }];
-            showLoading(); db.collection("customers").doc(currentId).update({ transactions: newTrans }).then(() => { hideLoading(); document.getElementById('t-amount').value = ''; document.getElementById('t-note').value = ''; });
+            
+            // استخدام التاريخ المختار أو التاريخ الحالي
+            const transDate = dVal ? new Date(dVal).toISOString() : new Date().toISOString();
+
+            const c = customers.find(x => x.id === currentId); 
+            const newTrans = [...(c.transactions || []), { 
+                id: Date.now().toString(), 
+                amount:a, 
+                type:transMode, 
+                note:n, 
+                date: transDate // التاريخ الجديد
+            }];
+            
+            showLoading(); 
+            db.collection("customers").doc(currentId).update({ transactions: newTrans }).then(() => { 
+                hideLoading(); 
+                document.getElementById('t-amount').value = ''; 
+                document.getElementById('t-note').value = ''; 
+                document.getElementById('t-date').value = ''; // تصفير التاريخ
+            });
         }
 
         // New Secure Delete Logic
