@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (Pro + الإعدادات)</title>
+    <title>تتبع الكريدي (Pro + التذكيرات)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -18,45 +18,39 @@
             --success: #22c55e; --success-light: #f0fdf4;
             --text-main: #0f172a; --text-sub: #64748b;
             --border: #e2e8f0; --radius: 16px;
+            --purple: #8b5cf6;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg-body); margin: 0; padding-bottom: 120px; color: var(--text-main); user-select: none; }
         
         /* Auth Screen */
-        #auth-screen {
-            position: fixed; inset: 0; background: var(--bg-body); z-index: 200;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
-            overflow-y: auto;
-        }
-        .auth-card {
-            background: white; padding: 2rem; border-radius: 20px; width: 100%; max-width: 400px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center;
-        }
-        .auth-input {
-            width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid var(--border);
-            border-radius: 12px; font-size: 1rem; font-weight: bold; transition: 0.3s;
-        }
+        #auth-screen { position: fixed; inset: 0; background: var(--bg-body); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
+        .auth-card { background: white; padding: 2rem; border-radius: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
+        .auth-input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid var(--border); border-radius: 12px; font-size: 1rem; font-weight: bold; transition: 0.3s; }
         .auth-input:focus { border-color: var(--primary); }
-        .auth-btn {
-            width: 100%; padding: 15px; background: var(--primary); color: white;
-            border: none; border-radius: 12px; font-weight: 900; font-size: 1.1rem; cursor: pointer;
-            margin-bottom: 10px;
-        }
-        .auth-link {
-            color: var(--primary); font-weight: bold; cursor: pointer; font-size: 0.9rem; text-decoration: none;
-            display: block; margin-top: 10px;
-        }
-        .checkbox-container {
-            display: flex; align-items: center; gap: 8px; margin-bottom: 15px; font-weight: bold; font-size: 0.9rem; color: var(--text-sub); justify-content: center;
-        }
+        .auth-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 900; font-size: 1.1rem; cursor: pointer; margin-bottom: 10px; }
+        .auth-link { color: var(--primary); font-weight: bold; cursor: pointer; font-size: 0.9rem; text-decoration: none; display: block; margin-top: 10px; }
+        .checkbox-container { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; font-weight: bold; font-size: 0.9rem; color: var(--text-sub); justify-content: center; }
         .checkbox-container input { width: 18px; height: 18px; accent-color: var(--primary); }
-        
         .error-msg { color: var(--danger); margin-top: 10px; font-weight: bold; display: none; background: var(--danger-light); padding: 10px; border-radius: 8px; font-size: 0.85rem; }
         .success-msg { color: var(--success); margin-top: 10px; font-weight: bold; display: none; background: var(--success-light); padding: 10px; border-radius: 8px; font-size: 0.85rem; }
 
-        /* Hide views initially */
-        #app-content, #signup-view, #reset-view { display: none; }
+        #app-content { display: none; }
+
+        /* Notification Badge */
+        .badge-container { position: relative; display: inline-block; }
+        .notification-badge {
+            position: absolute; top: -5px; right: -5px; background-color: var(--danger); color: white;
+            border-radius: 50%; width: 18px; height: 18px; display: flex; justify-content: center; align-items: center;
+            font-size: 10px; font-weight: bold; border: 2px solid white; display: none;
+        }
+
+        /* Tabs System */
+        .tabs-wrapper { padding: 10px 1rem 0 1rem; display: flex; gap: 10px; }
+        .tab-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer; background: white; color: var(--text-sub); border: 2px solid var(--border); transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .tab-btn.active.shop { background: var(--primary); color: white; border-color: var(--primary); }
+        .tab-btn.active.library { background: var(--purple); color: white; border-color: var(--purple); }
 
         /* General UI */
         .flex { display: flex; } .gap-2 { gap: 0.5rem; } .w-full { width: 100%; }
@@ -89,6 +83,7 @@
         
         .fab-btn { position: fixed; bottom: 1.5rem; left: 1.5rem; right: 1.5rem; background: var(--primary); color: white; padding: 1.2rem; border-radius: 1rem; font-weight: 900; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4); border: none; z-index: 30; }
         .fab-btn:active { transform: scale(0.95); }
+        .fab-btn.library-mode { background: var(--purple); }
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: flex-end; }
         .modal-content { background: #f8fafc; width: 100%; max-width: 600px; border-radius: 2rem 2rem 0 0; padding: 1.5rem; max-height: 95vh; overflow-y: auto; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; gap: 1rem; }
@@ -115,7 +110,18 @@
         .trans-give .amount-label { background: var(--success-light); color: var(--success); }
         .stat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); cursor: pointer; background: white; }
 
-        /* PRINT STYLES */
+        /* Task/Reminder Styles */
+        .task-item {
+            background: white; padding: 1rem; border-radius: 12px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid var(--border); transition: 0.2s;
+        }
+        .task-item.done { background: #f0fdf4; border-color: #86efac; }
+        .task-item.done .task-text { text-decoration: line-through; opacity: 0.6; }
+        .task-text { font-weight: bold; font-size: 1rem; flex: 1; margin-left: 10px; }
+        .task-actions { display: flex; gap: 8px; }
+        .btn-icon-small { padding: 6px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
         #print-area { display: none; }
         @media print {
             body * { visibility: hidden; }
@@ -135,27 +141,24 @@
 
     <!-- Auth Screen -->
     <div id="auth-screen">
-        <!-- Login -->
         <div id="login-view" class="auth-card">
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">تسجيل الدخول</h1>
             <input type="email" id="login-email" class="auth-input" placeholder="البريد الإلكتروني" dir="ltr">
             <input type="password" id="login-pass" class="auth-input" placeholder="كلمة المرور" dir="ltr">
-            <div class="checkbox-container"><input type="checkbox" id="remember-me" checked><label for="remember-me">تذكرني (حفظ الدخول)</label></div>
+            <div class="checkbox-container"><input type="checkbox" id="remember-me" checked><label for="remember-me">تذكرني</label></div>
             <button onclick="performLogin()" class="auth-btn">دخول</button>
             <div onclick="showView('signup')" class="auth-link">إنشاء حساب جديد</div>
             <div onclick="showView('reset')" class="auth-link" style="color: var(--text-sub);">نسيت كلمة السر؟</div>
             <p id="login-msg" class="error-msg"></p>
         </div>
-        <!-- Signup -->
         <div id="signup-view" class="auth-card" style="display:none;">
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">حساب جديد</h1>
             <input type="email" id="signup-email" class="auth-input" placeholder="البريد الإلكتروني" dir="ltr">
-            <input type="password" id="signup-pass" class="auth-input" placeholder="كلمة المرور (6 أرقام على الأقل)" dir="ltr">
+            <input type="password" id="signup-pass" class="auth-input" placeholder="كلمة المرور" dir="ltr">
             <button onclick="performSignup()" class="auth-btn">تسجيل</button>
             <div onclick="showView('login')" class="auth-link">لديك حساب؟ تسجيل الدخول</div>
             <p id="signup-msg" class="error-msg"></p>
         </div>
-        <!-- Reset -->
         <div id="reset-view" class="auth-card" style="display:none;">
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">استعادة الحساب</h1>
             <input type="email" id="reset-email" class="auth-input" placeholder="البريد الإلكتروني" dir="ltr">
@@ -170,26 +173,32 @@
     <div id="app-content">
         <header>
             <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="background: var(--primary-light); padding: 8px; border-radius: 12px; color: var(--primary);">
-                    <svg class="icon" viewBox="0 0 24 24"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
-                </div>
-                <h1 class="font-black text-xl" style="color: var(--text-main); margin:0;">تتبع الكريدي <span style="font-size:0.7rem; color:white; background:var(--success); padding:2px 8px; border-radius:10px; vertical-align:middle;">Kriiidi</span></h1>
+                <h1 class="font-black text-xl" style="color: var(--text-main); margin:0;" id="app-title">تتبع الكريدي</h1>
             </div>
             <div class="flex gap-2">
-                <!-- زر الطباعة -->
-                <button onclick="openPrintModal()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;">
-                    <svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                <!-- زر التذكيرات العامة الجديد -->
+                <button onclick="openGeneralReminders()" class="badge-container" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    <span id="header-reminder-count" class="notification-badge">0</span>
                 </button>
-                <!-- زر الإعدادات (تمت إعادته) -->
-                <button onclick="openSettings()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-                <!-- زر الخروج -->
-                <button onclick="logout()" style="background: #fee2e2; color: #dc2626; padding: 8px; border-radius: 50%; border: none; cursor:pointer;" title="تسجيل الخروج">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-                </button>
+
+                <button onclick="openPrintModal()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
+                <button onclick="openSettings()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button onclick="logout()" style="background: #fee2e2; color: #dc2626; padding: 8px; border-radius: 50%; border: none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
             </div>
         </header>
+
+        <!-- TABS -->
+        <div class="tabs-wrapper">
+            <button class="tab-btn active shop" id="tab-shop" onclick="switchTab('customers')">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                كريدي المحل
+            </button>
+            <button class="tab-btn" id="tab-lib" onclick="switchTab('library')">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                كريدي المكتبة
+            </button>
+        </div>
 
         <div class="stats-container">
             <div class="stat-box total" onclick="openStatsModal('debtors')">
@@ -209,7 +218,7 @@
         <div class="reminder-section">
             <div class="flex justify-between items-center" style="margin-bottom: 10px;">
                 <h3 class="font-bold text-sm text-sub flex items-center gap-2">
-                    <svg class="icon" style="width:16px;" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> نواقص
+                    <svg class="icon" style="width:16px;" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> نواقص (للمتجر)
                 </h3>
             </div>
             <div class="flex gap-2" style="margin-bottom: 10px;">
@@ -227,13 +236,30 @@
 
         <div id="customers-list" style="padding-bottom: 20px;"></div>
 
-        <button class="fab-btn" onclick="openModal('modal-add')">
+        <button id="main-fab" class="fab-btn" onclick="openModal('modal-add')">
             <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             زبون جديد
         </button>
     </div>
 
     <!-- === MODALS === -->
+
+    <!-- General Reminders Modal -->
+    <div id="modal-general-reminders" class="modal-overlay hidden">
+        <div class="modal-content" style="background: white; max-height: 85vh;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-black">تذكيرات ومهام</h2>
+                <button onclick="closeModal('modal-general-reminders')" class="btn-icon-small" style="background:#f1f5f9;"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
+            <div class="flex gap-2 mb-4">
+                <input id="new-gen-task" placeholder="اكتب التذكير هنا..." style="flex:1;">
+                <button onclick="addGeneralReminder()" class="btn-primary" style="width:auto; padding: 0 15px;">إضافة</button>
+            </div>
+            <div id="general-reminders-list" style="flex:1; overflow-y:auto; padding-bottom: 20px;">
+                <!-- Tasks will appear here -->
+            </div>
+        </div>
+    </div>
 
     <!-- Print Options Modal -->
     <div id="modal-print" class="modal-overlay hidden">
@@ -256,7 +282,7 @@
     <!-- Add Customer Modal -->
     <div id="modal-add" class="modal-overlay hidden">
         <div class="modal-content" style="background: white;">
-            <h2 class="text-xl font-black">إضافة زبون</h2>
+            <h2 class="text-xl font-black">إضافة زبون <span id="add-mode-title" style="font-size:0.7em; color:var(--primary);">(محل)</span></h2>
             <input id="new-name" placeholder="الاسم الكامل">
             <input id="new-type" placeholder="نوع الكريدي (اختياري)">
             <input id="new-amount" type="number" inputmode="numeric" placeholder="المبلغ الأولي">
@@ -373,8 +399,10 @@
 
         db.enablePersistence().catch(err => console.log(err.code));
 
-        let customers = [], reminders = [], settings = {warn: 30, danger: 45}, currentId = null, transMode = 'take';
+        let customers = [], reminders = [], generalReminders = [], settings = {warn: 30, danger: 45}, currentId = null, transMode = 'take';
         let reminderToDelete = null;
+        let currentCollection = 'customers'; // Default collection
+        let unsubscribeCustomers = null; // To handle listener switching
 
         function showLoading() { document.getElementById('loading-bar').style.width = '70%'; }
         function hideLoading() { document.getElementById('loading-bar').style.width = '100%'; setTimeout(()=> document.getElementById('loading-bar').style.width='0%', 300); }
@@ -434,9 +462,103 @@
         // --- APP LOGIC ---
         function initApp() {
             showLoading();
-            db.collection("customers").onSnapshot(snap => { customers = snap.docs.map(doc => ({id: doc.id, ...doc.data()})); renderAll(); hideLoading(); });
+            loadCollection(); // Load default
+            
+            // Listeners
             db.collection("reminders").onSnapshot(snap => { reminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()})); renderReminders(); });
+            
+            // General Reminders Listener (New Feature)
+            db.collection("general_reminders").orderBy("createdAt", "desc").onSnapshot(snap => {
+                generalReminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                renderGeneralReminders();
+            });
+
             db.collection("config").doc("settings").onSnapshot(doc => { if(doc.exists) settings = doc.data(); else db.collection("config").doc("settings").set(settings); });
+        }
+
+        // --- GENERAL REMINDERS LOGIC ---
+        function openGeneralReminders() { openModal('modal-general-reminders'); }
+        
+        function addGeneralReminder() {
+            const text = document.getElementById('new-gen-task').value;
+            if(!text) return;
+            db.collection('general_reminders').add({
+                text: text,
+                isDone: false,
+                createdAt: new Date().toISOString()
+            });
+            document.getElementById('new-gen-task').value = '';
+        }
+
+        function toggleGeneralReminder(id, currentStatus) {
+            db.collection('general_reminders').doc(id).update({ isDone: !currentStatus });
+        }
+
+        function deleteGeneralReminder(id) {
+            if(confirm('حذف هذا التذكير؟')) {
+                db.collection('general_reminders').doc(id).delete();
+            }
+        }
+
+        function renderGeneralReminders() {
+            const list = document.getElementById('general-reminders-list');
+            const badge = document.getElementById('header-reminder-count');
+            
+            // Update Badge Count (Only unfinished tasks)
+            const activeCount = generalReminders.filter(r => !r.isDone).length;
+            badge.innerText = activeCount;
+            badge.style.display = activeCount > 0 ? 'flex' : 'none';
+
+            // Render List
+            if(generalReminders.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">لا توجد تذكيرات</div>';
+                return;
+            }
+
+            list.innerHTML = generalReminders.map(r => `
+                <div class="task-item ${r.isDone ? 'done' : ''}">
+                    <div class="task-text">${r.text}</div>
+                    <div class="task-actions">
+                        <button onclick="toggleGeneralReminder('${r.id}', ${r.isDone})" class="btn-icon-small" style="background:${r.isDone?'#dcfce7':'#f1f5f9'}; color:${r.isDone?'#16a34a':'#64748b'}">
+                            <svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </button>
+                        <button onclick="deleteGeneralReminder('${r.id}')" class="btn-icon-small" style="background:#fee2e2; color:#ef4444;">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- TABS SYSTEM ---
+        function switchTab(collectionName) {
+            if(currentCollection === collectionName) return;
+            currentCollection = collectionName;
+            
+            // Update UI
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if(collectionName === 'customers') {
+                document.getElementById('tab-shop').classList.add('active');
+                document.getElementById('main-fab').classList.remove('library-mode');
+                document.getElementById('add-mode-title').innerText = '(محل)';
+            } else {
+                document.getElementById('tab-lib').classList.add('active');
+                document.getElementById('main-fab').classList.add('library-mode');
+                document.getElementById('add-mode-title').innerText = '(مكتبة)';
+            }
+
+            // Load Data
+            loadCollection();
+        }
+
+        function loadCollection() {
+            showLoading();
+            if(unsubscribeCustomers) unsubscribeCustomers(); // Stop listening to old
+            unsubscribeCustomers = db.collection(currentCollection).onSnapshot(snap => {
+                customers = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                renderAll(); 
+                hideLoading();
+            });
         }
 
         function getBal(c) { if(!c.transactions) return 0; return c.transactions.reduce((a,t)=> t.type==='take'?a+t.amount:a-t.amount, 0); }
@@ -508,7 +630,8 @@
             const transactionDate = dateInput ? new Date(dateInput).toISOString() : new Date().toISOString();
 
             showLoading();
-            db.collection("customers").add({
+            // Use currentCollection (dynamic)
+            db.collection(currentCollection).add({
                 name: n, 
                 type: t, 
                 createdAt: new Date().toISOString(), 
@@ -566,11 +689,12 @@
                 amount:a, 
                 type:transMode, 
                 note:n, 
-                date: transDate // التاريخ الجديد
+                date: transDate 
             }];
             
             showLoading(); 
-            db.collection("customers").doc(currentId).update({ transactions: newTrans }).then(() => { 
+            // Update using dynamic collection
+            db.collection(currentCollection).doc(currentId).update({ transactions: newTrans }).then(() => { 
                 hideLoading(); 
                 document.getElementById('t-amount').value = ''; 
                 document.getElementById('t-note').value = ''; 
@@ -583,7 +707,7 @@
             const enteredPin = document.getElementById('pin-input').value;
             if(enteredPin === '1988') {
                 showLoading();
-                db.collection("customers").doc(currentId).delete().then(() => { hideLoading(); closeModal('modal-pin'); closeModal('modal-details'); alert('تم الحذف بنجاح.'); });
+                db.collection(currentCollection).doc(currentId).delete().then(() => { hideLoading(); closeModal('modal-pin'); closeModal('modal-details'); alert('تم الحذف بنجاح.'); });
             } else { alert('خطأ: الرمز السري غير صحيح!'); document.getElementById('pin-input').value = ''; }
         }
 
@@ -595,9 +719,11 @@
             let totalDebt = 0;
             let rows = '';
             let title = '';
+            // Print Title based on collection
+            const contextTitle = currentCollection === 'customers' ? 'ديون المحل' : 'ديون المكتبة';
 
             if (type === 'all') {
-                title = 'تقرير الديون الشامل';
+                title = `تقرير شامل (${contextTitle})`;
                 const debtors = customers.filter(c => getBal(c) > 0);
                 debtors.forEach(c => {
                     const b = getBal(c);
@@ -607,7 +733,7 @@
             } else if (type === 'month') {
                 const mInput = document.getElementById('print-month').value; 
                 if(!mInput) return alert("المرجو تحديد الشهر");
-                title = `تقرير شهر ${mInput}`;
+                title = `تقرير شهر ${mInput} (${contextTitle})`;
                 
                 customers.forEach(c => {
                     const monthlyTrans = c.transactions.filter(t => t.date.startsWith(mInput));
