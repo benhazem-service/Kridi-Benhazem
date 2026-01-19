@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (تصميم ملون)</title>
+    <title>تتبع الكريدي (مرتب + إخفاء الصفر)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -12,41 +12,18 @@
 
     <style>
         :root {
-            /* الألوان الأساسية - سيتم تغييرها بالجافاسكريبت */
-            --primary: #2563eb; 
-            --primary-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
-            --bg-body: #f1f5f9; 
-            --bg-surface: #ffffff;
-            
-            --danger: #ef4444; --danger-light: #fee2e2;
-            --success: #10b981; --success-light: #d1fae5;
-            --text-main: #1e293b; --text-sub: #64748b;
+            --bg-body: #f8fafc; --bg-surface: #ffffff;
+            --primary: #2563eb; --primary-light: #eff6ff;
+            --danger: #ef4444; --danger-light: #fef2f2;
+            --success: #22c55e; --success-light: #f0fdf4;
+            --text-main: #0f172a; --text-sub: #64748b;
             --border: #e2e8f0; --radius: 16px;
+            --purple: #8b5cf6;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg-body); margin: 0; padding-bottom: 120px; color: var(--text-main); user-select: none; transition: background-color 0.3s; }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg-body); margin: 0; padding-bottom: 120px; color: var(--text-main); user-select: none; }
         
-        /* Loading Bar */
-        #loading-indicator { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.3); z-index: 300; }
-        #loading-bar { height: 100%; background: #fbbf24; width: 0%; transition: width 0.3s; box-shadow: 0 0 10px #fbbf24; }
-
-        /* HEADER Styled */
-        header {
-            background: var(--primary-gradient);
-            padding: 1.2rem 1rem;
-            position: sticky; top: 0; z-index: 20;
-            border-bottom-left-radius: 20px;
-            border-bottom-right-radius: 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            color: white;
-            transition: background 0.3s;
-        }
-        header h1 { color: white !important; font-size: 1.3rem; }
-        header .icon { stroke: white; }
-        header button { background: rgba(255,255,255,0.2) !important; border: none !important; backdrop-filter: blur(5px); }
-
         /* Auth Screen */
         #auth-screen { position: fixed; inset: 0; background: var(--bg-body); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
         .auth-card { background: white; padding: 2rem; border-radius: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
@@ -68,61 +45,61 @@
         .hidden { display: none !important; }
         .icon { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
-        /* Stats */
-        .stats-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 1rem; margin-top: -20px; z-index: 25; position: relative; }
-        .stat-box { background: var(--bg-surface); padding: 1rem 0.5rem; border-radius: var(--radius); text-align: center; border: 1px solid var(--border); transition: transform 0.1s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .stat-box:active { transform: scale(0.95); }
-        .stat-box.debtors { color: var(--danger); }
-        .stat-box.clear { color: var(--success); }
+        header { background: var(--bg-surface); padding: 1rem; position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        #loading-indicator { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: #e2e8f0; z-index: 300; }
+        #loading-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
         
-        /* Reminders */
-        .reminder-section { margin: 0 1rem 1rem 1rem; background: var(--bg-surface); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .stats-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 1rem; }
+        .stat-box { background: var(--bg-surface); padding: 1rem 0.5rem; border-radius: var(--radius); text-align: center; border: 2px solid transparent; transition: transform 0.1s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .stat-box:active { transform: scale(0.95); }
+        .stat-box.debtors { background: var(--danger-light); color: var(--danger); }
+        .stat-box.clear { background: var(--success-light); color: var(--success); }
+        
+        .reminder-section { margin: 0 1rem; background: var(--bg-surface); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); }
         .reminder-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-body); border-radius: 10px; margin-bottom: 0.5rem; }
         
-        /* Search */
-        .search-bar { margin: 0 1rem 1rem 1rem; position: relative; }
-        .search-bar input { width: 100%; padding: 1rem 1rem 1rem 3rem; border-radius: var(--radius); border: 2px solid var(--border); font-weight: bold; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .search-bar input:focus { border-color: var(--primary); }
+        .search-bar { margin: 1rem; position: relative; }
+        .search-bar input { width: 100%; padding: 1rem 1rem 1rem 3rem; border-radius: var(--radius); border: 2px solid var(--border); font-weight: bold; font-size: 1rem; }
         .search-bar .icon { position: absolute; right: 1rem; top: 1rem; color: var(--text-sub); }
         
-        /* Customer Grid */
+        /* Grid Layout */
         #customers-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 1rem 20px 1rem; }
         @media (min-width: 768px) { #customers-list { grid-template-columns: repeat(5, 1fr); } }
 
-        /* Colorful Customer Card */
+        /* Card Style */
         .customer-card {
             background: var(--bg-surface); padding: 1rem 0.5rem; border-radius: var(--radius);
             display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-            border: 1px solid var(--border); box-shadow: 0 3px 6px rgba(0,0,0,0.03);
-            transition: transform 0.1s; cursor: pointer; height: 100%; min-height: 140px; position: relative; overflow: hidden;
+            border: 2px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.1s; cursor: pointer;
+            height: 100%; min-height: 140px;
         }
-        .customer-card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary); opacity: 0.2;
-        }
-        .customer-card:active { transform: scale(0.96); }
+        .customer-card:active { transform: scale(0.98); background: #f1f5f9; }
+        .customer-card.danger { border-color: #fca5a5; background: #fff1f2; }
+        .customer-card.warning { border-color: #fdba74; background: #fff7ed; }
         
-        /* Avatar Circle */
+        /* Avatar */
         .customer-avatar {
-            width: 45px; height: 45px; border-radius: 50%; background: #e0e7ff; color: #4338ca;
-            display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 1.2rem;
+            width: 50px; height: 50px; border-radius: 50%; 
+            background: #e0e7ff; color: #4338ca;
+            display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; 
             margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            line-height: 1;
         }
 
         .card-name { font-weight: 900; font-size: 1rem; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
         .card-balance { font-weight: 900; font-size: 1.3rem; letter-spacing: -0.5px; color: var(--text-main); }
         .card-balance span { font-size: 0.7rem; color: var(--text-sub); }
         
-        /* Tabs System */
-        .tabs-wrapper { padding: 10px 1rem 0 1rem; display: flex; gap: 10px; margin-bottom: 15px; }
-        .tab-btn {
-            flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer;
-            background: white; color: var(--text-sub); border: 2px solid var(--border); transition: 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        /* Tabs */
+        .tabs-wrapper { padding: 10px 1rem 0 1rem; display: flex; gap: 10px; margin-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer; background: white; color: var(--text-sub); border: 2px solid var(--border); transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .tab-btn.active.shop { background: var(--primary); color: white; border-color: var(--primary); }
+        .tab-btn.active.library { background: var(--purple); color: white; border-color: var(--purple); }
 
-        .fab-btn { position: fixed; bottom: 1.5rem; left: 1.5rem; right: 1.5rem; background: var(--primary); color: white; padding: 1.2rem; border-radius: 1rem; font-weight: 900; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.3); border: none; z-index: 30; transition: background 0.3s; }
+        .fab-btn { position: fixed; bottom: 1.5rem; left: 1.5rem; right: 1.5rem; background: var(--primary); color: white; padding: 1.2rem; border-radius: 1rem; font-weight: 900; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4); border: none; z-index: 30; }
         .fab-btn:active { transform: scale(0.95); }
+        .fab-btn.library-mode { background: var(--purple); }
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: flex-end; }
         .modal-content { background: #f8fafc; width: 100%; max-width: 600px; border-radius: 2rem 2rem 0 0; padding: 1.5rem; max-height: 95vh; overflow-y: auto; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; gap: 1rem; }
@@ -130,20 +107,19 @@
         
         input, select { width: 100%; padding: 1rem; border-radius: 12px; border: 2px solid var(--border); font-size: 1rem; font-weight: bold; background: #fff; }
         input:focus { border-color: var(--primary); }
-        .btn-primary { background: var(--primary); color: white; padding: 1rem; border-radius: 12px; font-weight: bold; border: none; width: 100%; transition: background 0.3s; }
+        .btn-primary { background: var(--primary); color: white; padding: 1rem; border-radius: 12px; font-weight: bold; border: none; width: 100%; }
         .btn-secondary { background: #e2e8f0; color: var(--text-main); padding: 1rem; border-radius: 12px; font-weight: bold; border: none; width: 100%; }
         
-        /* Transaction History */
         .history-section { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .trans-card { background: white; padding: 1rem; border-radius: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; border-right: 5px solid transparent; }
+        .trans-card { background: white; padding: 1.2rem; border-radius: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; border-right: 6px solid transparent; }
         .trans-take { border-right-color: var(--danger); }
         .trans-give { border-right-color: var(--success); }
         .trans-info { display: flex; flex-direction: column; gap: 4px; }
         .trans-note { font-weight: 900; font-size: 1rem; color: var(--text-main); }
         .trans-date { font-size: 0.75rem; color: var(--text-sub); font-weight: bold; display: flex; align-items: center; gap: 4px; }
         .trans-amount { text-align: left; min-width: 90px; display: flex; flex-direction: column; align-items: flex-end; }
-        .amount-val { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.5px; }
-        .amount-label { font-size: 0.65rem; font-weight: bold; padding: 2px 8px; border-radius: 6px; margin-top: 2px; }
+        .amount-val { font-size: 1.3rem; font-weight: 900; letter-spacing: -0.5px; }
+        .amount-label { font-size: 0.7rem; font-weight: bold; padding: 2px 8px; border-radius: 6px; margin-top: 2px; }
         .trans-take .amount-val { color: var(--danger); }
         .trans-take .amount-label { background: var(--danger-light); color: var(--danger); }
         .trans-give .amount-val { color: var(--success); }
@@ -157,9 +133,8 @@
         .task-actions { display: flex; gap: 8px; }
         .btn-icon-small { padding: 6px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        /* Badge */
         .badge-container { position: relative; display: inline-block; }
-        .notification-badge { position: absolute; top: -5px; right: -5px; background-color: #fbbf24; color: #78350f; border-radius: 50%; width: 18px; height: 18px; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; border: 2px solid white; display: none; }
+        .notification-badge { position: absolute; top: -5px; right: -5px; background-color: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; border: 2px solid white; display: none; }
 
         #print-area { display: none; }
         @media print {
@@ -212,16 +187,16 @@
     <div id="app-content">
         <header>
             <div style="display: flex; align-items: center; gap: 10px;">
-                <h1 class="font-black text-xl" style="margin:0;" id="app-title">تتبع الكريدي</h1>
+                <h1 class="font-black text-xl" style="color: var(--text-main); margin:0;" id="app-title">تتبع الكريدي</h1>
             </div>
             <div class="flex gap-2">
-                <button onclick="openGeneralReminders()" class="badge-container" style="background: rgba(255,255,255,0.2); backdrop-filter:blur(5px); padding: 8px; border-radius: 50%; border: none; cursor:pointer;">
+                <button onclick="openGeneralReminders()" class="badge-container" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;">
                     <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                     <span id="header-reminder-count" class="notification-badge">0</span>
                 </button>
-                <button onclick="openPrintModal()" style="background: rgba(255,255,255,0.2); backdrop-filter:blur(5px); padding: 8px; border-radius: 50%; border: none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
-                <button onclick="openSettings()" style="background: rgba(255,255,255,0.2); backdrop-filter:blur(5px); padding: 8px; border-radius: 50%; border: none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                <button onclick="logout()" style="background: rgba(239,68,68,0.2); backdrop-filter:blur(5px); color: #fff; padding: 8px; border-radius: 50%; border: none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
+                <button onclick="openPrintModal()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
+                <button onclick="openSettings()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button onclick="logout()" style="background: #fee2e2; color: #dc2626; padding: 8px; border-radius: 50%; border: none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
             </div>
         </header>
 
@@ -591,11 +566,9 @@
             return Math.floor((new Date() - new Date(last.date)) / (1000 * 60 * 60 * 24));
         }
 
-        // Helper to generate a random color based on name
         function getColorFromName(name) {
             const colors = ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#34d399', '#22d3ee', '#818cf8', '#e879f9', '#f472b6'];
-            let hash = 0;
-            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            let hash = 0; for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
             return colors[Math.abs(hash) % colors.length];
         }
 
@@ -621,20 +594,33 @@
         function renderCustomers() {
             const term = document.getElementById('search-input').value.toLowerCase();
             const list = document.getElementById('customers-list');
-            const filtered = customers.filter(c => c.name.toLowerCase().includes(term) || (c.type||'').toLowerCase().includes(term)).sort((a,b) => getDays(b) - getDays(a));
+            
+            // 1. Filter: Match Search AND Balance != 0
+            const filtered = customers.filter(c => {
+                const matchesSearch = c.name.toLowerCase().includes(term) || (c.type||'').toLowerCase().includes(term);
+                const hasBalance = getBal(c) !== 0; 
+                // Show if matches search (even if 0 balance) OR has non-zero balance
+                if(term) return matchesSearch; 
+                return hasBalance;
+            })
+            // 2. Sort: Highest Days first (descending)
+            .sort((a,b) => getDays(b) - getDays(a));
+
             if(filtered.length === 0) { list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-sub);">لا توجد نتائج</div>'; return; }
             list.innerHTML = filtered.map(c => {
                 const bal = getBal(c);
                 const days = getDays(c);
                 const lastNote = c.transactions.length > 0 ? c.transactions[c.transactions.length-1].note : '';
-                const initial = c.name.charAt(0).toUpperCase();
                 const avatarColor = getColorFromName(c.name);
                 
                 let cls = 'customer-card';
                 if(bal > 0) { if(days >= settings.danger) cls += ' danger'; else if(days >= settings.warn) cls += ' warning'; }
                 return `
                 <div class="${cls}" onclick="openDetails('${c.id}')">
-                    <div class="customer-avatar" style="background:${avatarColor}20; color:${avatarColor}">${initial}</div>
+                    <div class="customer-avatar" style="background:${avatarColor}20; color:${avatarColor}">
+                        <span style="font-size:1.1rem">${days}</span>
+                        <span style="font-size:0.55rem">يوم</span>
+                    </div>
                     <div class="card-name">${c.name}</div>
                     <div class="card-balance" style="color:${bal>0?'var(--danger)':'var(--success)'}">${bal.toLocaleString()} <span>د.م</span></div>
                     <div style="font-size:0.7rem; color:var(--text-sub); margin-top:5px; height:15px; overflow:hidden;">${lastNote}</div>
