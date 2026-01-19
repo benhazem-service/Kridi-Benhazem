@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (Pro + التذكيرات)</title>
+    <title>تتبع الكريدي (تصميم ملون)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -12,18 +12,41 @@
 
     <style>
         :root {
-            --bg-body: #f8fafc; --bg-surface: #ffffff;
-            --primary: #2563eb; --primary-light: #eff6ff;
-            --danger: #ef4444; --danger-light: #fef2f2;
-            --success: #22c55e; --success-light: #f0fdf4;
-            --text-main: #0f172a; --text-sub: #64748b;
+            /* الألوان الأساسية - سيتم تغييرها بالجافاسكريبت */
+            --primary: #2563eb; 
+            --primary-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
+            --bg-body: #f1f5f9; 
+            --bg-surface: #ffffff;
+            
+            --danger: #ef4444; --danger-light: #fee2e2;
+            --success: #10b981; --success-light: #d1fae5;
+            --text-main: #1e293b; --text-sub: #64748b;
             --border: #e2e8f0; --radius: 16px;
-            --purple: #8b5cf6;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg-body); margin: 0; padding-bottom: 120px; color: var(--text-main); user-select: none; }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg-body); margin: 0; padding-bottom: 120px; color: var(--text-main); user-select: none; transition: background-color 0.3s; }
         
+        /* Loading Bar */
+        #loading-indicator { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.3); z-index: 300; }
+        #loading-bar { height: 100%; background: #fbbf24; width: 0%; transition: width 0.3s; box-shadow: 0 0 10px #fbbf24; }
+
+        /* HEADER Styled */
+        header {
+            background: var(--primary-gradient);
+            padding: 1.2rem 1rem;
+            position: sticky; top: 0; z-index: 20;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            color: white;
+            transition: background 0.3s;
+        }
+        header h1 { color: white !important; font-size: 1.3rem; }
+        header .icon { stroke: white; }
+        header button { background: rgba(255,255,255,0.2) !important; border: none !important; backdrop-filter: blur(5px); }
+
         /* Auth Screen */
         #auth-screen { position: fixed; inset: 0; background: var(--bg-body); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
         .auth-card { background: white; padding: 2rem; border-radius: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
@@ -38,20 +61,6 @@
 
         #app-content { display: none; }
 
-        /* Notification Badge */
-        .badge-container { position: relative; display: inline-block; }
-        .notification-badge {
-            position: absolute; top: -5px; right: -5px; background-color: var(--danger); color: white;
-            border-radius: 50%; width: 18px; height: 18px; display: flex; justify-content: center; align-items: center;
-            font-size: 10px; font-weight: bold; border: 2px solid white; display: none;
-        }
-
-        /* Tabs System */
-        .tabs-wrapper { padding: 10px 1rem 0 1rem; display: flex; gap: 10px; }
-        .tab-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer; background: white; color: var(--text-sub); border: 2px solid var(--border); transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .tab-btn.active.shop { background: var(--primary); color: white; border-color: var(--primary); }
-        .tab-btn.active.library { background: var(--purple); color: white; border-color: var(--purple); }
-
         /* General UI */
         .flex { display: flex; } .gap-2 { gap: 0.5rem; } .w-full { width: 100%; }
         .font-black { font-weight: 900; } .font-bold { font-weight: 700; }
@@ -59,31 +68,61 @@
         .hidden { display: none !important; }
         .icon { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
-        header { background: var(--bg-surface); padding: 1rem; position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        #loading-indicator { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: #e2e8f0; z-index: 300; }
-        #loading-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
-        
-        .stats-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 1rem; }
-        .stat-box { background: var(--bg-surface); padding: 1rem 0.5rem; border-radius: var(--radius); text-align: center; border: 2px solid transparent; transition: transform 0.1s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        /* Stats */
+        .stats-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 1rem; margin-top: -20px; z-index: 25; position: relative; }
+        .stat-box { background: var(--bg-surface); padding: 1rem 0.5rem; border-radius: var(--radius); text-align: center; border: 1px solid var(--border); transition: transform 0.1s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .stat-box:active { transform: scale(0.95); }
-        .stat-box.debtors { background: var(--danger-light); color: var(--danger); }
-        .stat-box.clear { background: var(--success-light); color: var(--success); }
+        .stat-box.debtors { color: var(--danger); }
+        .stat-box.clear { color: var(--success); }
         
-        .reminder-section { margin: 0 1rem; background: var(--bg-surface); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); }
+        /* Reminders */
+        .reminder-section { margin: 0 1rem 1rem 1rem; background: var(--bg-surface); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .reminder-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-body); border-radius: 10px; margin-bottom: 0.5rem; }
         
-        .search-bar { margin: 1rem; position: relative; }
-        .search-bar input { width: 100%; padding: 1rem 1rem 1rem 3rem; border-radius: var(--radius); border: 2px solid var(--border); font-weight: bold; font-size: 1rem; }
+        /* Search */
+        .search-bar { margin: 0 1rem 1rem 1rem; position: relative; }
+        .search-bar input { width: 100%; padding: 1rem 1rem 1rem 3rem; border-radius: var(--radius); border: 2px solid var(--border); font-weight: bold; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .search-bar input:focus { border-color: var(--primary); }
         .search-bar .icon { position: absolute; right: 1rem; top: 1rem; color: var(--text-sub); }
         
-        .customer-card { background: var(--bg-surface); margin: 0 1rem 0.75rem 1rem; padding: 1.25rem; border-radius: var(--radius); display: flex; justify-content: space-between; align-items: center; border: 2px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.1s; cursor: pointer; }
-        .customer-card:active { transform: scale(0.98); background: #f1f5f9; }
-        .customer-card.danger { border-color: #fca5a5; background: #fff1f2; }
-        .customer-card.warning { border-color: #fdba74; background: #fff7ed; }
+        /* Customer Grid */
+        #customers-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 1rem 20px 1rem; }
+        @media (min-width: 768px) { #customers-list { grid-template-columns: repeat(5, 1fr); } }
+
+        /* Colorful Customer Card */
+        .customer-card {
+            background: var(--bg-surface); padding: 1rem 0.5rem; border-radius: var(--radius);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+            border: 1px solid var(--border); box-shadow: 0 3px 6px rgba(0,0,0,0.03);
+            transition: transform 0.1s; cursor: pointer; height: 100%; min-height: 140px; position: relative; overflow: hidden;
+        }
+        .customer-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary); opacity: 0.2;
+        }
+        .customer-card:active { transform: scale(0.96); }
         
-        .fab-btn { position: fixed; bottom: 1.5rem; left: 1.5rem; right: 1.5rem; background: var(--primary); color: white; padding: 1.2rem; border-radius: 1rem; font-weight: 900; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4); border: none; z-index: 30; }
+        /* Avatar Circle */
+        .customer-avatar {
+            width: 45px; height: 45px; border-radius: 50%; background: #e0e7ff; color: #4338ca;
+            display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 1.2rem;
+            margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .card-name { font-weight: 900; font-size: 1rem; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+        .card-balance { font-weight: 900; font-size: 1.3rem; letter-spacing: -0.5px; color: var(--text-main); }
+        .card-balance span { font-size: 0.7rem; color: var(--text-sub); }
+        
+        /* Tabs System */
+        .tabs-wrapper { padding: 10px 1rem 0 1rem; display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn {
+            flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer;
+            background: white; color: var(--text-sub); border: 2px solid var(--border); transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+
+        .fab-btn { position: fixed; bottom: 1.5rem; left: 1.5rem; right: 1.5rem; background: var(--primary); color: white; padding: 1.2rem; border-radius: 1rem; font-weight: 900; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.3); border: none; z-index: 30; transition: background 0.3s; }
         .fab-btn:active { transform: scale(0.95); }
-        .fab-btn.library-mode { background: var(--purple); }
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: flex-end; }
         .modal-content { background: #f8fafc; width: 100%; max-width: 600px; border-radius: 2rem 2rem 0 0; padding: 1.5rem; max-height: 95vh; overflow-y: auto; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; gap: 1rem; }
@@ -91,36 +130,36 @@
         
         input, select { width: 100%; padding: 1rem; border-radius: 12px; border: 2px solid var(--border); font-size: 1rem; font-weight: bold; background: #fff; }
         input:focus { border-color: var(--primary); }
-        .btn-primary { background: var(--primary); color: white; padding: 1rem; border-radius: 12px; font-weight: bold; border: none; width: 100%; }
+        .btn-primary { background: var(--primary); color: white; padding: 1rem; border-radius: 12px; font-weight: bold; border: none; width: 100%; transition: background 0.3s; }
         .btn-secondary { background: #e2e8f0; color: var(--text-main); padding: 1rem; border-radius: 12px; font-weight: bold; border: none; width: 100%; }
         
+        /* Transaction History */
         .history-section { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .trans-card { background: white; padding: 1.2rem; border-radius: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; border-right: 6px solid transparent; }
+        .trans-card { background: white; padding: 1rem; border-radius: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; border-right: 5px solid transparent; }
         .trans-take { border-right-color: var(--danger); }
         .trans-give { border-right-color: var(--success); }
         .trans-info { display: flex; flex-direction: column; gap: 4px; }
         .trans-note { font-weight: 900; font-size: 1rem; color: var(--text-main); }
         .trans-date { font-size: 0.75rem; color: var(--text-sub); font-weight: bold; display: flex; align-items: center; gap: 4px; }
         .trans-amount { text-align: left; min-width: 90px; display: flex; flex-direction: column; align-items: flex-end; }
-        .amount-val { font-size: 1.3rem; font-weight: 900; letter-spacing: -0.5px; }
-        .amount-label { font-size: 0.7rem; font-weight: bold; padding: 2px 8px; border-radius: 6px; margin-top: 2px; }
+        .amount-val { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.5px; }
+        .amount-label { font-size: 0.65rem; font-weight: bold; padding: 2px 8px; border-radius: 6px; margin-top: 2px; }
         .trans-take .amount-val { color: var(--danger); }
         .trans-take .amount-label { background: var(--danger-light); color: var(--danger); }
         .trans-give .amount-val { color: var(--success); }
         .trans-give .amount-label { background: var(--success-light); color: var(--success); }
         .stat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); cursor: pointer; background: white; }
 
-        /* Task/Reminder Styles */
-        .task-item {
-            background: white; padding: 1rem; border-radius: 12px; margin-bottom: 8px;
-            display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid var(--border); transition: 0.2s;
-        }
+        .task-item { background: white; padding: 1rem; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); transition: 0.2s; }
         .task-item.done { background: #f0fdf4; border-color: #86efac; }
         .task-item.done .task-text { text-decoration: line-through; opacity: 0.6; }
         .task-text { font-weight: bold; font-size: 1rem; flex: 1; margin-left: 10px; }
         .task-actions { display: flex; gap: 8px; }
         .btn-icon-small { padding: 6px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+        /* Badge */
+        .badge-container { position: relative; display: inline-block; }
+        .notification-badge { position: absolute; top: -5px; right: -5px; background-color: #fbbf24; color: #78350f; border-radius: 50%; width: 18px; height: 18px; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; border: 2px solid white; display: none; }
 
         #print-area { display: none; }
         @media print {
@@ -173,18 +212,16 @@
     <div id="app-content">
         <header>
             <div style="display: flex; align-items: center; gap: 10px;">
-                <h1 class="font-black text-xl" style="color: var(--text-main); margin:0;" id="app-title">تتبع الكريدي</h1>
+                <h1 class="font-black text-xl" style="margin:0;" id="app-title">تتبع الكريدي</h1>
             </div>
             <div class="flex gap-2">
-                <!-- زر التذكيرات العامة الجديد -->
-                <button onclick="openGeneralReminders()" class="badge-container" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;">
+                <button onclick="openGeneralReminders()" class="badge-container" style="background: rgba(255,255,255,0.2); backdrop-filter:blur(5px); padding: 8px; border-radius: 50%; border: none; cursor:pointer;">
                     <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                     <span id="header-reminder-count" class="notification-badge">0</span>
                 </button>
-
-                <button onclick="openPrintModal()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
-                <button onclick="openSettings()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                <button onclick="logout()" style="background: #fee2e2; color: #dc2626; padding: 8px; border-radius: 50%; border: none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
+                <button onclick="openPrintModal()" style="background: rgba(255,255,255,0.2); backdrop-filter:blur(5px); padding: 8px; border-radius: 50%; border: none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
+                <button onclick="openSettings()" style="background: rgba(255,255,255,0.2); backdrop-filter:blur(5px); padding: 8px; border-radius: 50%; border: none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button onclick="logout()" style="background: rgba(239,68,68,0.2); backdrop-filter:blur(5px); color: #fff; padding: 8px; border-radius: 50%; border: none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
             </div>
         </header>
 
@@ -234,7 +271,7 @@
             <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         </div>
 
-        <div id="customers-list" style="padding-bottom: 20px;"></div>
+        <div id="customers-list"></div>
 
         <button id="main-fab" class="fab-btn" onclick="openModal('modal-add')">
             <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -255,9 +292,7 @@
                 <input id="new-gen-task" placeholder="اكتب التذكير هنا..." style="flex:1;">
                 <button onclick="addGeneralReminder()" class="btn-primary" style="width:auto; padding: 0 15px;">إضافة</button>
             </div>
-            <div id="general-reminders-list" style="flex:1; overflow-y:auto; padding-bottom: 20px;">
-                <!-- Tasks will appear here -->
-            </div>
+            <div id="general-reminders-list" style="flex:1; overflow-y:auto; padding-bottom: 20px;"></div>
         </div>
     </div>
 
@@ -404,6 +439,28 @@
         let currentCollection = 'customers'; // Default collection
         let unsubscribeCustomers = null; // To handle listener switching
 
+        // Colors
+        const THEMES = {
+            shop: {
+                primary: '#2563eb',
+                gradient: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                bg: '#f1f5f9'
+            },
+            library: {
+                primary: '#8b5cf6',
+                gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                bg: '#f3e8ff'
+            }
+        };
+
+        function applyTheme(themeName) {
+            const theme = THEMES[themeName];
+            const root = document.documentElement;
+            root.style.setProperty('--primary', theme.primary);
+            root.style.setProperty('--primary-gradient', theme.gradient);
+            root.style.setProperty('--bg-body', theme.bg);
+        }
+
         function showLoading() { document.getElementById('loading-bar').style.width = '70%'; }
         function hideLoading() { document.getElementById('loading-bar').style.width = '100%'; setTimeout(()=> document.getElementById('loading-bar').style.width='0%', 300); }
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -463,91 +520,56 @@
         function initApp() {
             showLoading();
             loadCollection(); // Load default
-            
-            // Listeners
             db.collection("reminders").onSnapshot(snap => { reminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()})); renderReminders(); });
-            
-            // General Reminders Listener (New Feature)
             db.collection("general_reminders").orderBy("createdAt", "desc").onSnapshot(snap => {
                 generalReminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
                 renderGeneralReminders();
             });
-
             db.collection("config").doc("settings").onSnapshot(doc => { if(doc.exists) settings = doc.data(); else db.collection("config").doc("settings").set(settings); });
         }
 
         // --- GENERAL REMINDERS LOGIC ---
         function openGeneralReminders() { openModal('modal-general-reminders'); }
-        
         function addGeneralReminder() {
             const text = document.getElementById('new-gen-task').value;
             if(!text) return;
-            db.collection('general_reminders').add({
-                text: text,
-                isDone: false,
-                createdAt: new Date().toISOString()
-            });
+            db.collection('general_reminders').add({ text: text, isDone: false, createdAt: new Date().toISOString() });
             document.getElementById('new-gen-task').value = '';
         }
-
-        function toggleGeneralReminder(id, currentStatus) {
-            db.collection('general_reminders').doc(id).update({ isDone: !currentStatus });
-        }
-
-        function deleteGeneralReminder(id) {
-            if(confirm('حذف هذا التذكير؟')) {
-                db.collection('general_reminders').doc(id).delete();
-            }
-        }
-
+        function toggleGeneralReminder(id, currentStatus) { db.collection('general_reminders').doc(id).update({ isDone: !currentStatus }); }
+        function deleteGeneralReminder(id) { if(confirm('حذف هذا التذكير؟')) { db.collection('general_reminders').doc(id).delete(); } }
         function renderGeneralReminders() {
             const list = document.getElementById('general-reminders-list');
             const badge = document.getElementById('header-reminder-count');
-            
-            // Update Badge Count (Only unfinished tasks)
             const activeCount = generalReminders.filter(r => !r.isDone).length;
-            badge.innerText = activeCount;
-            badge.style.display = activeCount > 0 ? 'flex' : 'none';
-
-            // Render List
-            if(generalReminders.length === 0) {
-                list.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">لا توجد تذكيرات</div>';
-                return;
-            }
-
+            badge.innerText = activeCount; badge.style.display = activeCount > 0 ? 'flex' : 'none';
+            if(generalReminders.length === 0) { list.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">لا توجد تذكيرات</div>'; return; }
             list.innerHTML = generalReminders.map(r => `
                 <div class="task-item ${r.isDone ? 'done' : ''}">
                     <div class="task-text">${r.text}</div>
                     <div class="task-actions">
-                        <button onclick="toggleGeneralReminder('${r.id}', ${r.isDone})" class="btn-icon-small" style="background:${r.isDone?'#dcfce7':'#f1f5f9'}; color:${r.isDone?'#16a34a':'#64748b'}">
-                            <svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </button>
-                        <button onclick="deleteGeneralReminder('${r.id}')" class="btn-icon-small" style="background:#fee2e2; color:#ef4444;">
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                        </button>
+                        <button onclick="toggleGeneralReminder('${r.id}', ${r.isDone})" class="btn-icon-small" style="background:${r.isDone?'#dcfce7':'#f1f5f9'}; color:${r.isDone?'#16a34a':'#64748b'}"><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></button>
+                        <button onclick="deleteGeneralReminder('${r.id}')" class="btn-icon-small" style="background:#fee2e2; color:#ef4444;"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
                     </div>
-                </div>
-            `).join('');
+                </div>`).join('');
         }
 
         // --- TABS SYSTEM ---
         function switchTab(collectionName) {
             if(currentCollection === collectionName) return;
             currentCollection = collectionName;
-            
-            // Update UI
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             if(collectionName === 'customers') {
                 document.getElementById('tab-shop').classList.add('active');
                 document.getElementById('main-fab').classList.remove('library-mode');
                 document.getElementById('add-mode-title').innerText = '(محل)';
+                applyTheme('shop');
             } else {
                 document.getElementById('tab-lib').classList.add('active');
                 document.getElementById('main-fab').classList.add('library-mode');
                 document.getElementById('add-mode-title').innerText = '(مكتبة)';
+                applyTheme('library');
             }
-
-            // Load Data
             loadCollection();
         }
 
@@ -567,6 +589,14 @@
             const last = [...c.transactions].reverse().find(t => t.type === 'take');
             if(!last) return 0;
             return Math.floor((new Date() - new Date(last.date)) / (1000 * 60 * 60 * 24));
+        }
+
+        // Helper to generate a random color based on name
+        function getColorFromName(name) {
+            const colors = ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#34d399', '#22d3ee', '#818cf8', '#e879f9', '#f472b6'];
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return colors[Math.abs(hash) % colors.length];
         }
 
         function renderAll() { renderCustomers(); renderStatsBox(); }
@@ -596,24 +626,18 @@
             list.innerHTML = filtered.map(c => {
                 const bal = getBal(c);
                 const days = getDays(c);
-                const lastTrans = c.transactions && c.transactions.length > 0 ? c.transactions[c.transactions.length - 1] : null;
-                const lastNote = lastTrans ? lastTrans.note : '';
+                const lastNote = c.transactions.length > 0 ? c.transactions[c.transactions.length-1].note : '';
+                const initial = c.name.charAt(0).toUpperCase();
+                const avatarColor = getColorFromName(c.name);
+                
                 let cls = 'customer-card';
                 if(bal > 0) { if(days >= settings.danger) cls += ' danger'; else if(days >= settings.warn) cls += ' warning'; }
                 return `
                 <div class="${cls}" onclick="openDetails('${c.id}')">
-                    <div style="flex:1; min-width:0;">
-                        <div class="font-black text-lg truncate">${c.name}</div>
-                        <div class="flex gap-2 items-center" style="margin-top:4px;">
-                            <span class="text-xs font-bold" style="background:rgba(0,0,0,0.05);padding:2px 8px;border-radius:4px;">${c.type || 'عام'}</span>
-                            ${bal > 0 ? `<span class="text-xs font-bold" style="background:rgba(0,0,0,0.05);padding:2px 8px;border-radius:4px;">${days} يوم</span>` : ''}
-                        </div>
-                        ${lastNote ? `<div style="font-size:0.8rem; color:var(--text-sub); margin-top:6px; font-weight:bold; display:flex; align-items:center; gap:4px; opacity:0.8;"><svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" x2="8" y1="13" y2="13"></line><line x1="16" x2="8" y1="17" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> ${lastNote}</div>` : ''}
-                    </div>
-                    <div style="text-align:left; flex-shrink:0; margin-right:10px;">
-                        <div class="text-xs font-bold text-sub">المتبقي</div>
-                        <div class="font-black text-xl" dir="ltr">${bal.toLocaleString()}</div>
-                    </div>
+                    <div class="customer-avatar" style="background:${avatarColor}20; color:${avatarColor}">${initial}</div>
+                    <div class="card-name">${c.name}</div>
+                    <div class="card-balance" style="color:${bal>0?'var(--danger)':'var(--success)'}">${bal.toLocaleString()} <span>د.م</span></div>
+                    <div style="font-size:0.7rem; color:var(--text-sub); margin-top:5px; height:15px; overflow:hidden;">${lastNote}</div>
                 </div>`;
             }).join('');
         }
@@ -624,27 +648,13 @@
             const t = document.getElementById('new-type').value;
             const a = parseFloat(document.getElementById('new-amount').value);
             const dateInput = document.getElementById('new-date').value;
-            
             if(!n) return alert('أدخل الاسم');
-            
             const transactionDate = dateInput ? new Date(dateInput).toISOString() : new Date().toISOString();
-
             showLoading();
-            // Use currentCollection (dynamic)
             db.collection(currentCollection).add({
-                name: n, 
-                type: t, 
-                createdAt: new Date().toISOString(), 
+                name: n, type: t, createdAt: new Date().toISOString(), 
                 transactions: a ? [{id:Date.now()+'t', amount:a, type:'take', note:'رصيد افتتاحي', date: transactionDate}] : [] 
-            })
-            .then(() => { 
-                hideLoading(); 
-                closeModal('modal-add'); 
-                document.getElementById('new-name').value = ''; 
-                document.getElementById('new-type').value = ''; 
-                document.getElementById('new-amount').value = ''; 
-                document.getElementById('new-date').value = '';
-            });
+            }).then(() => { hideLoading(); closeModal('modal-add'); document.getElementById('new-name').value = ''; document.getElementById('new-type').value = ''; document.getElementById('new-amount').value = ''; document.getElementById('new-date').value = ''; });
         }
 
         function addReminder() {
@@ -678,27 +688,13 @@
             const a = parseFloat(document.getElementById('t-amount').value); 
             const n = document.getElementById('t-note').value || (transMode==='take'?'كريدي':'دفعة');
             const dVal = document.getElementById('t-date').value;
-            
             if(!a || !currentId) return;
-            
             const transDate = dVal ? new Date(dVal).toISOString() : new Date().toISOString();
-
             const c = customers.find(x => x.id === currentId); 
-            const newTrans = [...(c.transactions || []), { 
-                id: Date.now().toString(), 
-                amount:a, 
-                type:transMode, 
-                note:n, 
-                date: transDate 
-            }];
-            
+            const newTrans = [...(c.transactions || []), { id: Date.now().toString(), amount:a, type:transMode, note:n, date: transDate }];
             showLoading(); 
-            // Update using dynamic collection
             db.collection(currentCollection).doc(currentId).update({ transactions: newTrans }).then(() => { 
-                hideLoading(); 
-                document.getElementById('t-amount').value = ''; 
-                document.getElementById('t-note').value = ''; 
-                document.getElementById('t-date').value = '';
+                hideLoading(); document.getElementById('t-amount').value = ''; document.getElementById('t-note').value = ''; document.getElementById('t-date').value = '';
             });
         }
 
@@ -719,7 +715,6 @@
             let totalDebt = 0;
             let rows = '';
             let title = '';
-            // Print Title based on collection
             const contextTitle = currentCollection === 'customers' ? 'ديون المحل' : 'ديون المكتبة';
 
             if (type === 'all') {
@@ -734,7 +729,6 @@
                 const mInput = document.getElementById('print-month').value; 
                 if(!mInput) return alert("المرجو تحديد الشهر");
                 title = `تقرير شهر ${mInput} (${contextTitle})`;
-                
                 customers.forEach(c => {
                     const monthlyTrans = c.transactions.filter(t => t.date.startsWith(mInput));
                     if(monthlyTrans.length > 0) {
@@ -746,22 +740,8 @@
                 });
             }
 
-            let tableHeader = type === 'all' 
-                ? `<tr><th>الاسم</th><th>النوع</th><th>المبلغ المتبقي</th></tr>` 
-                : `<tr><th>الاسم</th><th>أخذ (كريدي)</th><th>دفع</th><th>الصافي</th></tr>`;
-
-            printArea.innerHTML = `
-                <div class="print-header">
-                    <h1>تتبع الكريدي - ${title}</h1>
-                    <p>تاريخ الطباعة: ${date}</p>
-                </div>
-                <table>
-                    <thead>${tableHeader}</thead>
-                    <tbody>${rows || '<tr><td colspan="3">لا توجد بيانات</td></tr>'}</tbody>
-                </table>
-                <div class="print-total">المجموع الكلي: ${totalDebt.toLocaleString()} د.م</div>
-            `;
-
+            let tableHeader = type === 'all' ? `<tr><th>الاسم</th><th>النوع</th><th>المبلغ المتبقي</th></tr>` : `<tr><th>الاسم</th><th>أخذ (كريدي)</th><th>دفع</th><th>الصافي</th></tr>`;
+            printArea.innerHTML = `<div class="print-header"><h1>تتبع الكريدي - ${title}</h1><p>تاريخ الطباعة: ${date}</p></div><table><thead>${tableHeader}</thead><tbody>${rows || '<tr><td colspan="3">لا توجد بيانات</td></tr>'}</tbody></table><div class="print-total">المجموع الكلي: ${totalDebt.toLocaleString()} د.م</div>`;
             closeModal('modal-print');
             window.print();
         }
