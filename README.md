@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (ألوان وتعديلات)</title>
+    <title>تتبع الكريدي (التحقق من التكرار)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -66,25 +66,16 @@
         #customers-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 1rem 20px 1rem; }
         @media (min-width: 768px) { #customers-list { grid-template-columns: repeat(5, 1fr); } }
 
-        /* Card Style - UPDATED FOR COLORING */
+        /* Card Style */
         .customer-card {
             background: var(--bg-surface); padding: 1rem 0.5rem; border-radius: var(--radius);
             display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-            border: 2px solid transparent; /* Default no border */
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.1s; cursor: pointer;
+            border: 2px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.1s; cursor: pointer;
             height: 100%; min-height: 140px;
         }
         .customer-card:active { transform: scale(0.98); background: #f1f5f9; }
-        
-        /* TINTED COLORS FOR WARNING/DANGER */
-        .customer-card.danger { 
-            border: 2px solid #ef4444; 
-            background: #fee2e2; 
-        }
-        .customer-card.warning { 
-            border: 2px solid #f97316; 
-            background: #ffedd5; 
-        }
+        .customer-card.danger { border-color: #fca5a5; background: #fff1f2; }
+        .customer-card.warning { border-color: #fdba74; background: #fff7ed; }
         
         /* Avatar */
         .customer-avatar {
@@ -145,6 +136,27 @@
         /* Badge */
         .badge-container { position: relative; display: inline-block; }
         .notification-badge { position: absolute; top: -5px; right: -5px; background-color: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; border: 2px solid white; display: none; }
+
+        /* Suggestions List for Duplicate Names */
+        #name-suggestions {
+            background: #fff1f2;
+            border: 2px solid #fecaca;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: none; /* Hidden by default */
+        }
+        .suggestion-item {
+            padding: 8px;
+            color: #b91c1c;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #fee2e2;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer;
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:active { background: rgba(0,0,0,0.05); border-radius: 8px; }
 
         #print-area { display: none; }
         @media print {
@@ -303,7 +315,11 @@
     <div id="modal-add" class="modal-overlay hidden">
         <div class="modal-content" style="background: white;">
             <h2 class="text-xl font-black">إضافة زبون <span id="add-mode-title" style="font-size:0.7em; color:var(--primary);">(محل)</span></h2>
-            <input id="new-name" placeholder="الاسم الكامل">
+            
+            <input id="new-name" placeholder="الاسم الكامل" oninput="checkSimilarNames()" autocomplete="off">
+            <!-- قائمة الاقتراحات (تظهر عند وجود تشابه) -->
+            <div id="name-suggestions"></div>
+
             <input id="new-type" placeholder="نوع الكريدي (اختياري)">
             <input id="new-amount" type="number" inputmode="numeric" placeholder="المبلغ الأولي">
             <div style="margin-bottom: 10px;">
@@ -449,7 +465,17 @@
         function showLoading() { document.getElementById('loading-bar').style.width = '70%'; }
         function hideLoading() { document.getElementById('loading-bar').style.width = '100%'; setTimeout(()=> document.getElementById('loading-bar').style.width='0%', 300); }
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function closeModal(id) { 
+            document.getElementById(id).classList.add('hidden'); 
+            // Clear suggestions when modal closes
+            if(id === 'modal-add') {
+                document.getElementById('name-suggestions').style.display = 'none';
+                document.getElementById('new-name').value = '';
+                document.getElementById('new-type').value = '';
+                document.getElementById('new-amount').value = '';
+                document.getElementById('new-date').value = '';
+            }
+        }
         function showView(view) {
             ['login-view', 'signup-view', 'reset-view'].forEach(v => document.getElementById(v).style.display = 'none');
             document.getElementById(view + '-view').style.display = 'block';
@@ -605,15 +631,12 @@
             const term = document.getElementById('search-input').value.toLowerCase();
             const list = document.getElementById('customers-list');
             
-            // 1. Filter: Match Search AND Balance != 0
             const filtered = customers.filter(c => {
                 const matchesSearch = c.name.toLowerCase().includes(term) || (c.type||'').toLowerCase().includes(term);
                 const hasBalance = getBal(c) !== 0; 
-                // Show if matches search (even if 0 balance) OR has non-zero balance
                 if(term) return matchesSearch; 
                 return hasBalance;
             })
-            // 2. Sort: Highest Days first (descending)
             .sort((a,b) => getDays(b) - getDays(a));
 
             if(filtered.length === 0) { list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-sub);">لا توجد نتائج</div>'; return; }
@@ -638,6 +661,38 @@
             }).join('');
         }
 
+        // --- NAME DUPLICATION CHECK ---
+        function checkSimilarNames() {
+            const input = document.getElementById('new-name').value.trim().toLowerCase();
+            const suggestionsBox = document.getElementById('name-suggestions');
+            suggestionsBox.innerHTML = '';
+            
+            if(input.length < 2) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            // Find matching names
+            const matches = customers.filter(c => c.name.toLowerCase().includes(input));
+
+            if(matches.length > 0) {
+                suggestionsBox.style.display = 'block';
+                matches.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerHTML = `<span>موجود: ${c.name}</span> <span style="font-size:0.7rem">(${getBal(c)})</span>`;
+                    div.onclick = () => {
+                        // If clicked, open existing customer directly
+                        closeModal('modal-add');
+                        openDetails(c.id);
+                    };
+                    suggestionsBox.appendChild(div);
+                });
+            } else {
+                suggestionsBox.style.display = 'none';
+            }
+        }
+
         // --- CRUD ---
         function saveCustomer() {
             const n = document.getElementById('new-name').value;
@@ -647,7 +702,8 @@
             
             if(!n) return alert('أدخل الاسم');
             
-            // USE TYPE AS NOTE IF AVAILABLE
+            // Check logic inside save just in case (optional, but UI warning is usually enough)
+            
             const initialNote = t ? t : 'رصيد افتتاحي';
             const transactionDate = dateInput ? new Date(dateInput).toISOString() : new Date().toISOString();
 
@@ -661,10 +717,7 @@
             .then(() => { 
                 hideLoading(); 
                 closeModal('modal-add'); 
-                document.getElementById('new-name').value = ''; 
-                document.getElementById('new-type').value = ''; 
-                document.getElementById('new-amount').value = ''; 
-                document.getElementById('new-date').value = '';
+                // Clear form is handled in closeModal
             });
         }
 
@@ -699,26 +752,13 @@
             const a = parseFloat(document.getElementById('t-amount').value); 
             const n = document.getElementById('t-note').value || (transMode==='take'?'كريدي':'دفعة');
             const dVal = document.getElementById('t-date').value;
-            
             if(!a || !currentId) return;
-            
             const transDate = dVal ? new Date(dVal).toISOString() : new Date().toISOString();
-
             const c = customers.find(x => x.id === currentId); 
-            const newTrans = [...(c.transactions || []), { 
-                id: Date.now().toString(), 
-                amount:a, 
-                type:transMode, 
-                note:n, 
-                date: transDate // التاريخ الجديد
-            }];
-            
+            const newTrans = [...(c.transactions || []), { id: Date.now().toString(), amount:a, type:transMode, note:n, date: transDate }];
             showLoading(); 
             db.collection(currentCollection).doc(currentId).update({ transactions: newTrans }).then(() => { 
-                hideLoading(); 
-                document.getElementById('t-amount').value = ''; 
-                document.getElementById('t-note').value = ''; 
-                document.getElementById('t-date').value = '';
+                hideLoading(); document.getElementById('t-amount').value = ''; document.getElementById('t-note').value = ''; document.getElementById('t-date').value = '';
             });
         }
 
