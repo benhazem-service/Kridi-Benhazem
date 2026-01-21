@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (إصلاح الربط)</title>
+    <title>تتبع الكريدي (دردشة الشركاء)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -19,7 +19,7 @@
             --text-main: #0f172a; --text-sub: #64748b;
             --border: #e2e8f0; --radius: 16px;
             --purple: #8b5cf6;
-            --teal: #14b8a6;
+            --teal: #0d9488; --teal-dark: #115e59;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -94,10 +94,31 @@
         
         /* Tabs System */
         .tabs-wrapper { padding: 10px 1rem 0 1rem; display: flex; gap: 8px; margin-bottom: 10px; overflow-x: auto; }
-        .tab-btn { flex: 1; min-width: 100px; padding: 12px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer; background: white; color: var(--text-sub); border: 2px solid var(--border); transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.9rem; }
+        .tab-btn {
+            position: relative;
+            flex: 1; min-width: 100px; padding: 12px; border-radius: 12px; border: none; font-weight: 900; 
+            cursor: pointer; background: white; color: var(--text-sub); border: 2px solid var(--border); 
+            transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.9rem;
+        }
         .tab-btn.active.shop { background: var(--primary); color: white; border-color: var(--primary); }
         .tab-btn.active.library { background: var(--purple); color: white; border-color: var(--purple); }
         .tab-btn.active.shared { background: var(--teal); color: white; border-color: var(--teal); }
+
+        /* TAB BADGES */
+        .tab-badge {
+            background: rgba(0,0,0,0.1);
+            color: inherit;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+            display: none;
+        }
+        .tab-btn.active .tab-badge {
+            background: rgba(255,255,255,0.3);
+            color: white;
+        }
 
         .fab-btn { position: fixed; bottom: 1.5rem; left: 1.5rem; right: 1.5rem; background: var(--primary); color: white; padding: 1.2rem; border-radius: 1rem; font-weight: 900; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4); border: none; z-index: 30; }
         .fab-btn:active { transform: scale(0.95); }
@@ -128,6 +149,7 @@
         .trans-give .amount-val { color: var(--success); }
         .trans-give .amount-label { background: var(--success-light); color: var(--success); }
         .stat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); cursor: pointer; background: white; }
+        .trans-owner { font-size: 0.65rem; color: var(--text-sub); font-weight: bold; margin-top: 3px; display: flex; align-items: center; gap: 3px; }
 
         .task-item { background: white; padding: 1rem; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); transition: 0.2s; }
         .task-item.done { background: #f0fdf4; border-color: #86efac; }
@@ -139,33 +161,46 @@
         .badge-container { position: relative; display: inline-block; }
         .notification-badge { position: absolute; top: -5px; right: -5px; background-color: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; border: 2px solid white; display: none; }
 
-        /* Suggestions List */
-        #name-suggestions {
-            background: #fff1f2;
-            border: 2px solid #fecaca;
-            border-radius: 12px;
-            padding: 10px;
-            margin-bottom: 10px;
-            display: none; 
-        }
-        .suggestion-item {
-            padding: 8px;
-            color: #b91c1c;
-            font-weight: bold;
-            font-size: 0.9rem;
-            border-bottom: 1px solid #fee2e2;
-            display: flex; justify-content: space-between; align-items: center;
-            cursor: pointer;
-        }
+        #name-suggestions { background: #fff1f2; border: 2px solid #fecaca; border-radius: 12px; padding: 10px; margin-bottom: 10px; display: none; }
+        .suggestion-item { padding: 8px; color: #b91c1c; font-weight: bold; font-size: 0.9rem; border-bottom: 1px solid #fee2e2; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .suggestion-item:last-child { border-bottom: none; }
         
-        .id-box {
-            background: #1e293b; color: #fff; padding: 10px; border-radius: 8px;
-            font-family: monospace; font-size: 0.85rem; letter-spacing: 1px;
-            margin-top: 5px; word-break: break-all; text-align: center;
-            user-select: all; cursor: pointer; border: 1px dashed #475569;
-        }
+        .id-box { background: #1e293b; color: #fff; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; letter-spacing: 1px; margin-top: 5px; word-break: break-all; text-align: center; user-select: all; cursor: pointer; border: 1px dashed #475569; }
         .id-box:active { background: #0f172a; }
+
+        /* Shared Grid Style */
+        .shared-grid { display: grid; grid-template-columns: 1fr; gap: 15px; padding: 0 1rem 20px 1rem; }
+        @media (min-width: 600px) { .shared-grid { grid-template-columns: repeat(2, 1fr); } }
+        .partner-card { background: linear-gradient(135deg, var(--teal) 0%, #115e59 100%); border-radius: 20px; padding: 20px; color: white; position: relative; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.4); transition: transform 0.2s; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; min-height: 180px; display: flex; flex-direction: column; justify-content: space-between; }
+        .partner-card:active { transform: scale(0.97); }
+        .partner-card::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); transform: rotate(30deg); pointer-events: none; }
+        .partner-card-header { display: flex; justify-content: space-between; align-items: flex-start; z-index: 2; position: relative; }
+        .chip { width: 45px; height: 32px; background: linear-gradient(135deg, #fcd34d 0%, #d97706 100%); border-radius: 6px; box-shadow: inset 0 0 5px rgba(0,0,0,0.2); }
+        .wifi-icon { transform: rotate(90deg); opacity: 0.8; stroke: white; }
+        .partner-info { z-index: 2; position: relative; margin-top: 15px; }
+        .partner-label { font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+        .partner-name { font-size: 1.4rem; font-weight: 900; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2px; }
+        .partner-id-fake { font-family: monospace; font-size: 1rem; opacity: 0.7; letter-spacing: 3px; margin-top: 5px; }
+        .partner-footer { display: flex; justify-content: space-between; align-items: flex-end; z-index: 2; position: relative; margin-top: 15px; }
+        .partner-balance { font-size: 1.8rem; font-weight: 900; line-height: 1; }
+        .partner-status { font-size: 0.8rem; font-weight: bold; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; backdrop-filter: blur(4px); }
+
+        /* Shared Notes UI */
+        .shared-msg { padding: 10px 14px; border-radius: 12px; margin-bottom: 12px; position: relative; max-width: 85%; line-height: 1.4; word-wrap: break-word; }
+        .msg-me { background: #dcfce7; color: #14532d; margin-right: auto; border-bottom-right-radius: 2px; border: 1px solid #86efac; }
+        .msg-partner { background: #fee2e2; color: #7f1d1d; margin-left: auto; border-bottom-left-radius: 2px; border: 1px solid #fca5a5; }
+        
+        .msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.7rem; opacity: 0.8; }
+        .msg-text { font-weight: bold; font-size: 1rem; }
+        
+        .delete-note-btn {
+            position: absolute; top: -8px; left: -8px; 
+            background: #ef4444; color: white; 
+            border-radius: 50%; width: 22px; height: 22px; 
+            border: 2px solid white; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
 
         #print-area { display: none; }
         @media print {
@@ -237,18 +272,21 @@
             <button class="tab-btn active shop" id="tab-shop" onclick="switchTab('customers')">
                 <svg class="icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                 كريدي المحل
+                <span id="badge-shop" class="tab-badge">0</span>
             </button>
             <button class="tab-btn" id="tab-lib" onclick="switchTab('library')">
                 <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
                 كريدي المكتبة
+                <span id="badge-lib" class="tab-badge">0</span>
             </button>
-            <button class="tab-btn" id="tab-shared" onclick="switchTab('shared')">
+            <button class="tab-btn" id="tab-shared" onclick="switchTab('shared_ledgers')">
                 <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 مشترك
+                <span id="badge-shared" class="tab-badge">0</span>
             </button>
         </div>
 
-        <div class="stats-container">
+        <div class="stats-container" id="stats-section">
             <div class="stat-box total" onclick="openStatsModal('debtors')">
                 <div class="text-xs font-bold text-sub">المجموع</div>
                 <div id="stat-total" class="font-black text-xl" dir="ltr">...</div>
@@ -369,28 +407,35 @@
                     <svg class="icon" style="width:20px;" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
             </div>
-            <div style="background: var(--text-main); color: white; padding: 1.5rem; border-radius: 1.5rem; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 10px;">
+
+            <!-- Normal Balance Section (Hidden in Shared Mode) -->
+            <div id="balance-section" style="background: var(--text-main); color: white; padding: 1.5rem; border-radius: 1.5rem; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 10px;">
                 <div class="text-xs font-bold opacity-70">المبلغ الإجمالي</div>
                 <div id="d-balance" class="font-black" style="font-size: 2.5rem;" dir="ltr">0</div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+
+            <!-- Normal Action Buttons (Hidden in Shared Mode) -->
+            <div id="actions-section" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
                 <button id="btn-take" onclick="setTransMode('take')" class="btn-action" style="background: var(--danger-light); color: var(--danger); padding: 1rem; border-radius: 12px; font-weight: 900; border: 2px solid var(--danger);">عليه (كريدي)</button>
                 <button id="btn-give" onclick="setTransMode('give')" class="btn-action" style="background: white; color: var(--text-main); padding: 1rem; border-radius: 12px; font-weight: 900; border: 1px solid var(--border);">له (دفع)</button>
             </div>
-            <div class="flex gap-2">
+
+            <div class="flex gap-2" style="margin-top: 10px;">
                 <input id="t-amount" type="number" inputmode="numeric" placeholder="المبلغ" style="flex: 1;">
                 <input id="t-note" type="text" placeholder="ملاحظة" style="flex: 1.5;">
             </div>
-            <div style="margin-bottom: 10px;">
+            <div style="margin-bottom: 10px; margin-top:5px;">
                 <input id="t-date" type="date" style="width:100%; border:1px solid #e2e8f0; font-size:0.9rem;" title="اختر تاريخ للعملية القديمة">
             </div>
-            <button onclick="addTransaction()" class="btn-primary" style="padding: 1rem;">تسجيل العملية</button>
+            
+            <button id="btn-add-trans" onclick="addTransaction()" class="btn-primary" style="padding: 1rem;">تسجيل العملية</button>
+            
             <div style="margin-top: 10px;">
-                <h3 class="font-bold text-sm text-sub" style="margin-bottom: 10px;">سجل العمليات (التفاصيل)</h3>
+                <h3 class="font-bold text-sm text-sub" style="margin-bottom: 10px;">السجل</h3>
                 <div id="d-history" class="history-section"></div>
             </div>
-            <button onclick="requestPinToDelete()" style="color: var(--danger); background: white; padding: 1rem; border-radius: 12px; font-weight: bold; border: 2px solid var(--danger-light); display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; cursor:pointer;">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg> حذف الزبون
+            <button id="btn-delete-customer" onclick="requestPinToDelete()" style="color: var(--danger); background: white; padding: 1rem; border-radius: 12px; font-weight: bold; border: 2px solid var(--danger-light); display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; cursor:pointer;">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg> حذف
             </button>
         </div>
     </div>
@@ -603,6 +648,7 @@
         // --- APP LOGIC ---
         function initApp() {
             showLoading();
+            setupTabCounters();
             loadCollection(); 
             
             db.collection("reminders").where("userId", "==", currentUser.uid).onSnapshot(snap => { 
@@ -643,6 +689,31 @@
                 </div>`).join('');
         }
 
+        // --- TAB COUNTERS ---
+        function setupTabCounters() {
+            // Shop Count
+            db.collection('customers').where("userId", "==", currentUser.uid).onSnapshot(snap => {
+                const count = snap.size;
+                const el = document.getElementById('badge-shop');
+                el.innerText = count;
+                el.style.display = count > 0 ? 'inline-block' : 'none';
+            });
+            // Lib Count
+            db.collection('library').where("userId", "==", currentUser.uid).onSnapshot(snap => {
+                const count = snap.size;
+                const el = document.getElementById('badge-lib');
+                el.innerText = count;
+                el.style.display = count > 0 ? 'inline-block' : 'none';
+            });
+            // Shared Count
+            db.collection('shared_ledgers').where("participants", "array-contains", currentUser.uid).onSnapshot(snap => {
+                const count = snap.size;
+                const el = document.getElementById('badge-shared');
+                el.innerText = count;
+                el.style.display = count > 0 ? 'inline-block' : 'none';
+            });
+        }
+
         // --- TABS SYSTEM ---
         function switchTab(collectionName) {
             if(currentCollection === collectionName) return;
@@ -651,22 +722,31 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('main-fab').classList.remove('library-mode', 'shared-mode');
             
+            const reminderSection = document.querySelector('.reminder-section');
+            const statsSection = document.getElementById('stats-section');
+
             if(collectionName === 'customers') {
                 document.getElementById('tab-shop').classList.add('active');
                 document.getElementById('add-mode-title').innerText = '(محل)';
                 document.getElementById('fab-text').innerText = 'زبون جديد';
+                reminderSection.style.display = 'block'; 
+                statsSection.style.display = 'grid';
                 applyTheme('shop');
             } else if (collectionName === 'library') {
                 document.getElementById('tab-lib').classList.add('active');
                 document.getElementById('main-fab').classList.add('library-mode');
                 document.getElementById('add-mode-title').innerText = '(مكتبة)';
                 document.getElementById('fab-text').innerText = 'زبون جديد';
+                reminderSection.style.display = 'none'; 
+                statsSection.style.display = 'grid';
                 applyTheme('library');
             } else if (collectionName === 'shared_ledgers') {
                 document.getElementById('tab-shared').classList.add('active');
                 document.getElementById('main-fab').classList.add('shared-mode');
                 document.getElementById('add-mode-title').innerText = '(مشترك)';
                 document.getElementById('fab-text').innerText = 'ربط حساب';
+                reminderSection.style.display = 'none'; 
+                statsSection.style.display = 'none'; // Hide stats for shared
                 applyTheme('shared');
             }
             loadCollection();
@@ -685,6 +765,7 @@
             if(unsubscribeCustomers) unsubscribeCustomers(); 
             
             if (currentCollection === 'shared_ledgers') {
+                // Logic for shared ledgers: query where current user is in participants
                 unsubscribeCustomers = db.collection('shared_ledgers')
                     .where("participants", "array-contains", currentUser.uid)
                     .onSnapshot(snap => {
@@ -693,6 +774,7 @@
                         hideLoading();
                     });
             } else {
+                // Normal logic for private collections
                 unsubscribeCustomers = db.collection(currentCollection)
                     .where("userId", "==", currentUser.uid)
                     .onSnapshot(snap => {
@@ -748,26 +830,51 @@
             })
             .sort((a,b) => getDays(b) - getDays(a));
 
-            if(filtered.length === 0) { list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-sub);">لا توجد نتائج</div>'; return; }
-            list.innerHTML = filtered.map(c => {
-                const bal = getBal(c);
-                const days = getDays(c);
-                const lastNote = c.transactions.length > 0 ? c.transactions[c.transactions.length-1].note : '';
-                const avatarColor = getColorFromName(c.name);
+            // USE SPECIAL GRID FOR SHARED
+            if(currentCollection === 'shared_ledgers') {
+                list.className = 'shared-grid';
+                if(filtered.length === 0) { list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-sub);">لا توجد حسابات مشتركة</div>'; return; }
                 
-                let cls = 'customer-card';
-                if(bal > 0) { if(days >= settings.danger) cls += ' danger'; else if(days >= settings.warn) cls += ' warning'; }
-                return `
-                <div class="${cls}" onclick="openDetails('${c.id}')">
-                    <div class="customer-avatar" style="background:${avatarColor}20; color:${avatarColor}">
-                        <span style="font-size:1.1rem">${days}</span>
-                        <span style="font-size:0.55rem">يوم</span>
-                    </div>
-                    <div class="card-name">${c.name}</div>
-                    <div class="card-balance" style="color:${bal>0?'var(--danger)':'var(--success)'}">${bal.toLocaleString()} <span>د.م</span></div>
-                    <div style="font-size:0.7rem; color:var(--text-sub); margin-top:5px; height:15px; overflow:hidden;">${lastNote}</div>
-                </div>`;
-            }).join('');
+                list.innerHTML = filtered.map(c => {
+                    const bal = getBal(c);
+                    return `
+                    <div class="partner-card" onclick="openDetails('${c.id}')">
+                        <div class="partner-card-header">
+                            <div class="chip"></div>
+                            <svg class="icon wifi-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+                        </div>
+                        <div class="partner-info">
+                             <div class="partner-label">حساب مشترك</div>
+                             <div class="partner-name">${c.name}</div>
+                             <div class="partner-id-fake">**** **** **** ${c.id.substr(-4)}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+                
+            } else {
+                // NORMAL GRID FOR SHOP/LIBRARY
+                list.className = 'customers-grid';
+                if(filtered.length === 0) { list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-sub);">لا توجد نتائج</div>'; return; }
+                list.innerHTML = filtered.map(c => {
+                    const bal = getBal(c);
+                    const days = getDays(c);
+                    const lastNote = c.transactions.length > 0 ? c.transactions[c.transactions.length-1].note : '';
+                    const avatarColor = getColorFromName(c.name);
+                    
+                    let cls = 'customer-card';
+                    if(bal > 0) { if(days >= settings.danger) cls += ' danger'; else if(days >= settings.warn) cls += ' warning'; }
+                    return `
+                    <div class="${cls}" onclick="openDetails('${c.id}')">
+                        <div class="customer-avatar" style="background:${avatarColor}20; color:${avatarColor}">
+                            <span style="font-size:1.1rem">${days}</span>
+                            <span style="font-size:0.55rem">يوم</span>
+                        </div>
+                        <div class="card-name">${c.name}</div>
+                        <div class="card-balance" style="color:${bal>0?'var(--danger)':'var(--success)'}">${bal.toLocaleString()} <span>د.م</span></div>
+                        <div style="font-size:0.7rem; color:var(--text-sub); margin-top:5px; height:15px; overflow:hidden;">${lastNote}</div>
+                    </div>`;
+                }).join('');
+            }
         }
 
         // --- NAME DUPLICATION CHECK ---
@@ -857,38 +964,98 @@
             currentId = id; const c = customers.find(x => x.id === id); if(!c) return; 
             document.getElementById('d-name').innerText = c.name; document.getElementById('d-type').innerText = c.type || 'عام'; 
             document.getElementById('t-date').value = ''; 
+            
+            // Adjust UI based on mode
+            const amountInput = document.getElementById('t-amount');
+            const actionsSection = document.getElementById('actions-section');
+            const balanceSection = document.getElementById('balance-section');
+            const addBtn = document.getElementById('btn-add-trans');
+            const deleteBtn = document.getElementById('btn-delete-customer');
+
+            if(currentCollection === 'shared_ledgers') {
+                // SHARED MODE: Hide amounts, show chat style
+                amountInput.style.display = 'none';
+                actionsSection.style.display = 'none';
+                balanceSection.style.display = 'none';
+                deleteBtn.style.display = 'none'; // Hide delete
+                addBtn.innerText = 'إرسال ملاحظة';
+                document.getElementById('t-note').placeholder = 'اكتب رسالة...';
+            } else {
+                // NORMAL MODE
+                amountInput.style.display = 'block';
+                actionsSection.style.display = 'grid';
+                balanceSection.style.display = 'block';
+                deleteBtn.style.display = 'flex';
+                addBtn.innerText = 'تسجيل العملية';
+                document.getElementById('t-note').placeholder = 'ملاحظة';
+            }
+
             renderDetails(c); openModal('modal-details'); 
         }
 
         function renderDetails(c) {
-            document.getElementById('d-balance').innerText = getBal(c).toLocaleString();
-            document.getElementById('d-history').innerHTML = [...c.transactions].reverse().map(t => `
-                <div class="trans-card ${t.type === 'take' ? 'trans-take' : 'trans-give'}">
-                    <div class="trans-info"><div class="trans-note">${t.note}</div><div class="trans-date">${new Date(t.date).toLocaleDateString('ar-MA')} | ${new Date(t.date).toLocaleTimeString('ar-MA', {hour:'2-digit', minute:'2-digit'})}</div></div>
-                    <div class="trans-amount"><span class="amount-val" dir="ltr">${t.amount.toLocaleString()}</span><span class="amount-label">${t.type === 'take' ? 'عليه ⬆' : 'له ⬇'}</span></div>
-                </div>`).join('');
+            if(currentCollection !== 'shared_ledgers') {
+                document.getElementById('d-balance').innerText = getBal(c).toLocaleString();
+            }
+            
+            document.getElementById('d-history').innerHTML = [...c.transactions].reverse().map(t => {
+                if (currentCollection === 'shared_ledgers') {
+                    // CHAT STYLE RENDER
+                    const isMe = t.by === currentUser.uid;
+                    const msgClass = isMe ? 'msg-me' : 'msg-partner';
+                    
+                    // Delete button only for MY messages
+                    const deleteBtn = isMe ? `<button onclick="deleteSharedNote('${t.id}')" class="delete-note-btn">&times;</button>` : '';
+
+                    return `
+                        <div class="shared-msg ${msgClass}">
+                            ${deleteBtn}
+                            <div class="msg-header">
+                                <span>${isMe ? 'أنا' : 'الشريك'}</span>
+                                <span>${new Date(t.date).toLocaleTimeString('ar-MA', {hour:'2-digit', minute:'2-digit'})}</span>
+                            </div>
+                            <div class="msg-text">${t.note}</div>
+                        </div>
+                    `;
+                } else {
+                    // STANDARD CREDIT RENDER
+                    return `
+                    <div class="trans-card ${t.type === 'take' ? 'trans-take' : 'trans-give'}">
+                        <div class="trans-info">
+                            <div class="trans-note">${t.note}</div>
+                            <div class="trans-date">${new Date(t.date).toLocaleDateString('ar-MA')}</div>
+                        </div>
+                        <div class="trans-amount"><span class="amount-val" dir="ltr">${t.amount.toLocaleString()}</span><span class="amount-label">${t.type === 'take' ? 'عليه ⬆' : 'له ⬇'}</span></div>
+                    </div>`;
+                }
+            }).join('');
         }
+        
         function setTransMode(m) { transMode = m; const bT = document.getElementById('btn-take'); const bG = document.getElementById('btn-give'); if(m === 'take') { bT.style.borderColor = '#ef4444'; bT.style.background = '#fef2f2'; bT.style.color = '#ef4444'; bG.style.borderColor = '#e2e8f0'; bG.style.background = 'white'; bG.style.color = '#0f172a'; } else { bG.style.borderColor = '#22c55e'; bG.style.background = '#f0fdf4'; bG.style.color = '#22c55e'; bT.style.borderColor = '#e2e8f0'; bT.style.background = 'white'; bT.style.color = '#0f172a'; } }
         
         function addTransaction() {
-            const a = parseFloat(document.getElementById('t-amount').value); 
-            const n = document.getElementById('t-note').value || (transMode==='take'?'كريدي':'دفعة');
+            const n = document.getElementById('t-note').value;
+            // For shared: note is required, amount is 0. For normal: amount required if note empty (usually)
+            
+            let a = 0;
+            if(currentCollection !== 'shared_ledgers') {
+                a = parseFloat(document.getElementById('t-amount').value);
+                if(!a && !n) return; // Must have something
+            } else {
+                if(!n) return; // Note required for shared
+            }
+
             const dVal = document.getElementById('t-date').value;
-            
-            if(!a || !currentId) return;
-            
             const transDate = dVal ? new Date(dVal).toISOString() : new Date().toISOString();
 
-            // Check if currentCollection is customers/library or shared
-            // We use the same update logic because we structured shared_ledgers similarly (with 'transactions' array)
             const c = customers.find(x => x.id === currentId); 
             const newTrans = [...(c.transactions || []), { 
                 id: Date.now().toString(), 
-                amount:a, 
+                amount: a || 0, 
                 type:transMode, 
                 note:n, 
                 date: transDate,
-                by: currentUser.uid // Track who added it (useful for shared)
+                by: currentUser.uid 
             }];
             
             showLoading(); 
@@ -899,6 +1066,19 @@
                 document.getElementById('t-date').value = '';
             });
         }
+
+        // --- Delete Shared Note Logic ---
+        function deleteSharedNote(transId) {
+            if(!confirm("حذف هذه الملاحظة؟")) return;
+            const c = customers.find(x => x.id === currentId);
+            const newTrans = c.transactions.filter(t => t.id !== transId);
+            
+            showLoading();
+            db.collection(currentCollection).doc(currentId).update({ transactions: newTrans }).then(() => {
+                hideLoading();
+            });
+        }
+
 
         function requestPinToDelete() { document.getElementById('pin-input').value = ''; openModal('modal-pin'); }
         function confirmDeleteCustomer() {
