@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (حسابات خاصة)</title>
+    <title>تتبع الكريدي (إصلاح الربط)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -19,6 +19,7 @@
             --text-main: #0f172a; --text-sub: #64748b;
             --border: #e2e8f0; --radius: 16px;
             --purple: #8b5cf6;
+            --teal: #14b8a6;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -92,14 +93,16 @@
         .card-balance span { font-size: 0.7rem; color: var(--text-sub); }
         
         /* Tabs System */
-        .tabs-wrapper { padding: 10px 1rem 0 1rem; display: flex; gap: 10px; margin-bottom: 10px; }
-        .tab-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer; background: white; color: var(--text-sub); border: 2px solid var(--border); transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .tabs-wrapper { padding: 10px 1rem 0 1rem; display: flex; gap: 8px; margin-bottom: 10px; overflow-x: auto; }
+        .tab-btn { flex: 1; min-width: 100px; padding: 12px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer; background: white; color: var(--text-sub); border: 2px solid var(--border); transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.9rem; }
         .tab-btn.active.shop { background: var(--primary); color: white; border-color: var(--primary); }
         .tab-btn.active.library { background: var(--purple); color: white; border-color: var(--purple); }
+        .tab-btn.active.shared { background: var(--teal); color: white; border-color: var(--teal); }
 
         .fab-btn { position: fixed; bottom: 1.5rem; left: 1.5rem; right: 1.5rem; background: var(--primary); color: white; padding: 1.2rem; border-radius: 1rem; font-weight: 900; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4); border: none; z-index: 30; }
         .fab-btn:active { transform: scale(0.95); }
         .fab-btn.library-mode { background: var(--purple); }
+        .fab-btn.shared-mode { background: var(--teal); }
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: flex-end; }
         .modal-content { background: #f8fafc; width: 100%; max-width: 600px; border-radius: 2rem 2rem 0 0; padding: 1.5rem; max-height: 95vh; overflow-y: auto; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; gap: 1rem; }
@@ -133,7 +136,6 @@
         .task-actions { display: flex; gap: 8px; }
         .btn-icon-small { padding: 6px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        /* Badge */
         .badge-container { position: relative; display: inline-block; }
         .notification-badge { position: absolute; top: -5px; right: -5px; background-color: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; border: 2px solid white; display: none; }
 
@@ -144,7 +146,7 @@
             border-radius: 12px;
             padding: 10px;
             margin-bottom: 10px;
-            display: none;
+            display: none; 
         }
         .suggestion-item {
             padding: 8px;
@@ -156,7 +158,14 @@
             cursor: pointer;
         }
         .suggestion-item:last-child { border-bottom: none; }
-        .suggestion-item:active { background: rgba(0,0,0,0.05); border-radius: 8px; }
+        
+        .id-box {
+            background: #1e293b; color: #fff; padding: 10px; border-radius: 8px;
+            font-family: monospace; font-size: 0.85rem; letter-spacing: 1px;
+            margin-top: 5px; word-break: break-all; text-align: center;
+            user-select: all; cursor: pointer; border: 1px dashed #475569;
+        }
+        .id-box:active { background: #0f172a; }
 
         #print-area { display: none; }
         @media print {
@@ -189,8 +198,9 @@
         </div>
         <div id="signup-view" class="auth-card" style="display:none;">
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">حساب جديد</h1>
+            <input type="text" id="signup-name" class="auth-input" placeholder="اسم المستخدم (اسم المتجر)">
             <input type="email" id="signup-email" class="auth-input" placeholder="البريد الإلكتروني" dir="ltr">
-            <input type="password" id="signup-pass" class="auth-input" placeholder="كلمة المرور" dir="ltr">
+            <input type="password" id="signup-pass" class="auth-input" placeholder="كلمة المرور (6 أرقام على الأقل)" dir="ltr">
             <button onclick="performSignup()" class="auth-btn">تسجيل</button>
             <div onclick="showView('login')" class="auth-link">لديك حساب؟ تسجيل الدخول</div>
             <p id="signup-msg" class="error-msg"></p>
@@ -217,7 +227,7 @@
                     <span id="header-reminder-count" class="notification-badge">0</span>
                 </button>
                 <button onclick="openPrintModal()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
-                <button onclick="openSettings()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button onclick="openSettings()" style="background: var(--bg-body); padding: 8px; border-radius: 50%; border: 1px solid var(--border); cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
                 <button onclick="logout()" style="background: #fee2e2; color: #dc2626; padding: 8px; border-radius: 50%; border: none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
             </div>
         </header>
@@ -231,6 +241,10 @@
             <button class="tab-btn" id="tab-lib" onclick="switchTab('library')">
                 <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
                 كريدي المكتبة
+            </button>
+            <button class="tab-btn" id="tab-shared" onclick="switchTab('shared')">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                مشترك
             </button>
         </div>
 
@@ -270,9 +284,9 @@
 
         <div id="customers-list"></div>
 
-        <button id="main-fab" class="fab-btn" onclick="openModal('modal-add')">
+        <button id="main-fab" class="fab-btn" onclick="openMainAction()">
             <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            زبون جديد
+            <span id="fab-text">زبون جديد</span>
         </button>
     </div>
 
@@ -308,9 +322,6 @@
         </div>
     </div>
 
-    <!-- Hidden Print Area -->
-    <div id="print-area"></div>
-
     <!-- Add Customer Modal -->
     <div id="modal-add" class="modal-overlay hidden">
         <div class="modal-content" style="background: white;">
@@ -328,6 +339,20 @@
             <div class="flex gap-2" style="margin-top: 10px;">
                 <button onclick="saveCustomer()" class="btn-primary">حفظ في السحابة</button>
                 <button onclick="closeModal('modal-add')" class="btn-secondary">إلغاء</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Connect Shared Account Modal -->
+    <div id="modal-connect" class="modal-overlay hidden">
+        <div class="modal-content" style="background: white;">
+            <h2 class="text-xl font-black">ربط حساب مشترك</h2>
+            <p style="font-size:0.9rem; color:var(--text-sub); margin-bottom:15px;">أدخل اسم الشريك والمعرف الرقمي (ID) الخاص به.</p>
+            <input id="connect-name" placeholder="اسم الشريك (للتذكير)">
+            <input id="connect-id" placeholder="المعرف الرقمي للشريك (User UID)" style="font-family:monospace;">
+            <div class="flex gap-2" style="margin-top: 10px;">
+                <button onclick="createSharedLedger()" class="btn-primary" style="background:var(--teal);">ربط الحساب</button>
+                <button onclick="closeModal('modal-connect')" class="btn-secondary">إلغاء</button>
             </div>
         </div>
     </div>
@@ -412,9 +437,31 @@
             <input id="set-warn" type="number">
             <label class="font-bold text-sm">تنبيه أحمر (أيام)</label>
             <input id="set-danger" type="number">
+            
+            <div style="border-top:1px solid #eee; margin:15px 0;"></div>
+            <!-- Digital ID Section -->
+            <div class="settings-info" style="text-align: center;">
+                <label style="font-weight:bold; color:var(--text-sub); display:block; margin-bottom:5px;">المعرف الرقمي الخاص بك (ID)</label>
+                <div id="user-digital-id" class="id-box" onclick="copyMyID()">...</div>
+                <p style="font-size:0.7rem; color:var(--text-sub); margin-top:5px;">اضغط على الرقم لنسخه</p>
+            </div>
+
+            <!-- Direct Link Button -->
+            <button onclick="openModal('modal-connect')" class="btn-secondary" style="margin-top:10px; border:2px dashed var(--teal); color:var(--teal);">ربط حساب شريك</button>
+
+            <!-- Admin Actions -->
+            <div id="admin-actions" style="display:none; text-align:center; margin-top:15px; padding-top:15px; border-top:1px solid #eee;">
+                <p style="color:var(--text-sub); font-size:0.8rem; margin-bottom:10px;">إدارة البيانات القديمة</p>
+                <button onclick="claimLegacyData()" class="btn-secondary" style="border: 2px dashed var(--primary); color: var(--primary);">ربط البيانات القديمة بحسابي</button>
+                <p id="claim-status" style="font-size:0.8rem; color:green; margin-top:5px;"></p>
+            </div>
+
             <button onclick="saveSettings()" class="btn-primary" style="margin-top: 10px;">حفظ التغييرات</button>
         </div>
     </div>
+
+    <!-- Hidden Print Area -->
+    <div id="print-area"></div>
 
     <!-- Logic -->
     <script>
@@ -436,9 +483,11 @@
 
         let customers = [], reminders = [], generalReminders = [], settings = {warn: 30, danger: 45}, currentId = null, transMode = 'take';
         let reminderToDelete = null;
-        let currentCollection = 'customers'; // Default collection (changes based on tab)
-        let currentUserRef = null; // Reference to user specific document
-        let unsubscribeCustomers = null; // To handle listener switching
+        let currentCollection = 'customers'; 
+        let unsubscribeCustomers = null; 
+        let currentUser = null;
+
+        const ADMIN_EMAIL = 'benhazem.service@gmail.com'; 
 
         // Colors
         const THEMES = {
@@ -451,6 +500,11 @@
                 primary: '#8b5cf6',
                 gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
                 bg: '#f3e8ff'
+            },
+            shared: {
+                primary: '#14b8a6',
+                gradient: 'linear-gradient(135deg, #14b8a6, #0f766e)',
+                bg: '#f0fdfa'
             }
         };
 
@@ -474,6 +528,10 @@
                 document.getElementById('new-amount').value = '';
                 document.getElementById('new-date').value = '';
             }
+            if(id === 'modal-connect') {
+                document.getElementById('connect-name').value = '';
+                document.getElementById('connect-id').value = '';
+            }
         }
         function showView(view) {
             ['login-view', 'signup-view', 'reset-view'].forEach(v => document.getElementById(v).style.display = 'none');
@@ -484,15 +542,17 @@
         // --- AUTH ---
         auth.onAuthStateChanged((user) => {
             if (user) {
+                currentUser = user;
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
-                // Initialize user reference
-                currentUserRef = db.collection('users').doc(user.uid);
+                if(user.email === ADMIN_EMAIL) {
+                    document.getElementById('admin-actions').style.display = 'block';
+                }
                 initApp();
             } else {
+                currentUser = null;
                 document.getElementById('auth-screen').style.display = 'flex';
                 document.getElementById('app-content').style.display = 'none';
-                currentUserRef = null;
                 showView('login');
             }
         });
@@ -511,12 +571,23 @@
         }
 
         function performSignup() {
+            const name = document.getElementById('signup-name').value;
             const email = document.getElementById('signup-email').value;
             const pass = document.getElementById('signup-pass').value;
             const msg = document.getElementById('signup-msg');
-            if(!email || !pass) { msg.innerText = "يرجى ملء البيانات"; msg.style.display = 'block'; return; }
+            
+            if(!name || !email || !pass) { msg.innerText = "يرجى ملء جميع البيانات"; msg.style.display = 'block'; return; }
             msg.style.display = 'none'; showLoading();
-            auth.createUserWithEmailAndPassword(email, pass).catch(e => { hideLoading(); msg.innerText = e.message; msg.style.display = 'block'; });
+            
+            auth.createUserWithEmailAndPassword(email, pass)
+                .then((userCredential) => {
+                    return userCredential.user.updateProfile({ displayName: name });
+                })
+                .catch(e => { 
+                    hideLoading(); 
+                    msg.innerText = e.message; 
+                    msg.style.display = 'block'; 
+                });
         }
 
         function performReset() {
@@ -529,26 +600,21 @@
 
         function logout() { auth.signOut(); }
 
-        // --- APP LOGIC (Scoped to User) ---
+        // --- APP LOGIC ---
         function initApp() {
-            if (!currentUserRef) return;
             showLoading();
-            loadCollection(); // Load default tab data
+            loadCollection(); 
             
-            // Listen to User Specific Reminders
-            currentUserRef.collection("reminders").onSnapshot(snap => { reminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()})); renderReminders(); });
+            db.collection("reminders").where("userId", "==", currentUser.uid).onSnapshot(snap => { 
+                reminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()})); renderReminders(); 
+            });
             
-            // Listen to User Specific General Reminders
-            currentUserRef.collection("general_reminders").orderBy("createdAt", "desc").onSnapshot(snap => {
+            db.collection("general_reminders").where("userId", "==", currentUser.uid).orderBy("createdAt", "desc").onSnapshot(snap => {
                 generalReminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
                 renderGeneralReminders();
             });
 
-            // Listen to User Specific Settings
-            currentUserRef.collection("config").doc("settings").onSnapshot(doc => { 
-                if(doc.exists) settings = doc.data(); 
-                else currentUserRef.collection("config").doc("settings").set(settings); 
-            });
+            db.collection("config").doc("settings").onSnapshot(doc => { if(doc.exists) settings = doc.data(); else db.collection("config").doc("settings").set(settings); });
         }
 
         // --- GENERAL REMINDERS LOGIC ---
@@ -556,11 +622,11 @@
         function addGeneralReminder() {
             const text = document.getElementById('new-gen-task').value;
             if(!text) return;
-            currentUserRef.collection('general_reminders').add({ text: text, isDone: false, createdAt: new Date().toISOString() });
+            db.collection('general_reminders').add({ text: text, isDone: false, createdAt: new Date().toISOString(), userId: currentUser.uid });
             document.getElementById('new-gen-task').value = '';
         }
-        function toggleGeneralReminder(id, currentStatus) { currentUserRef.collection('general_reminders').doc(id).update({ isDone: !currentStatus }); }
-        function deleteGeneralReminder(id) { if(confirm('حذف هذا التذكير؟')) { currentUserRef.collection('general_reminders').doc(id).delete(); } }
+        function toggleGeneralReminder(id, currentStatus) { db.collection('general_reminders').doc(id).update({ isDone: !currentStatus }); }
+        function deleteGeneralReminder(id) { if(confirm('حذف هذا التذكير؟')) { db.collection('general_reminders').doc(id).delete(); } }
         function renderGeneralReminders() {
             const list = document.getElementById('general-reminders-list');
             const badge = document.getElementById('header-reminder-count');
@@ -581,31 +647,60 @@
         function switchTab(collectionName) {
             if(currentCollection === collectionName) return;
             currentCollection = collectionName;
+            
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('main-fab').classList.remove('library-mode', 'shared-mode');
+            
             if(collectionName === 'customers') {
                 document.getElementById('tab-shop').classList.add('active');
-                document.getElementById('main-fab').classList.remove('library-mode');
                 document.getElementById('add-mode-title').innerText = '(محل)';
+                document.getElementById('fab-text').innerText = 'زبون جديد';
                 applyTheme('shop');
-            } else {
+            } else if (collectionName === 'library') {
                 document.getElementById('tab-lib').classList.add('active');
                 document.getElementById('main-fab').classList.add('library-mode');
                 document.getElementById('add-mode-title').innerText = '(مكتبة)';
+                document.getElementById('fab-text').innerText = 'زبون جديد';
                 applyTheme('library');
+            } else if (collectionName === 'shared_ledgers') {
+                document.getElementById('tab-shared').classList.add('active');
+                document.getElementById('main-fab').classList.add('shared-mode');
+                document.getElementById('add-mode-title').innerText = '(مشترك)';
+                document.getElementById('fab-text').innerText = 'ربط حساب';
+                applyTheme('shared');
             }
             loadCollection();
         }
 
+        function openMainAction() {
+            if(currentCollection === 'shared_ledgers') {
+                openModal('modal-connect');
+            } else {
+                openModal('modal-add');
+            }
+        }
+
         function loadCollection() {
-            if (!currentUserRef) return;
             showLoading();
-            if(unsubscribeCustomers) unsubscribeCustomers(); // Stop listening to old
-            // Using user scoped collection
-            unsubscribeCustomers = currentUserRef.collection(currentCollection).onSnapshot(snap => {
-                customers = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                renderAll(); 
-                hideLoading();
-            });
+            if(unsubscribeCustomers) unsubscribeCustomers(); 
+            
+            if (currentCollection === 'shared_ledgers') {
+                unsubscribeCustomers = db.collection('shared_ledgers')
+                    .where("participants", "array-contains", currentUser.uid)
+                    .onSnapshot(snap => {
+                        customers = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                        renderAll(); 
+                        hideLoading();
+                    });
+            } else {
+                unsubscribeCustomers = db.collection(currentCollection)
+                    .where("userId", "==", currentUser.uid)
+                    .onSnapshot(snap => {
+                        customers = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                        renderAll(); 
+                        hideLoading();
+                    });
+            }
         }
 
         function getBal(c) { if(!c.transactions) return 0; return c.transactions.reduce((a,t)=> t.type==='take'?a+t.amount:a-t.amount, 0); }
@@ -681,10 +776,7 @@
             const suggestionsBox = document.getElementById('name-suggestions');
             suggestionsBox.innerHTML = '';
             
-            if(input.length < 2) {
-                suggestionsBox.style.display = 'none';
-                return;
-            }
+            if(input.length < 2) { suggestionsBox.style.display = 'none'; return; }
 
             const matches = customers.filter(c => c.name.toLowerCase().includes(input));
 
@@ -694,18 +786,13 @@
                     const div = document.createElement('div');
                     div.className = 'suggestion-item';
                     div.innerHTML = `<span>موجود: ${c.name}</span> <span style="font-size:0.7rem">(${getBal(c)})</span>`;
-                    div.onclick = () => {
-                        closeModal('modal-add');
-                        openDetails(c.id);
-                    };
+                    div.onclick = () => { closeModal('modal-add'); openDetails(c.id); };
                     suggestionsBox.appendChild(div);
                 });
-            } else {
-                suggestionsBox.style.display = 'none';
-            }
+            } else { suggestionsBox.style.display = 'none'; }
         }
 
-        // --- CRUD ---
+        // --- CRUD with USER ID ---
         function saveCustomer() {
             const n = document.getElementById('new-name').value;
             const t = document.getElementById('new-type').value;
@@ -718,11 +805,11 @@
             const transactionDate = dateInput ? new Date(dateInput).toISOString() : new Date().toISOString();
 
             showLoading();
-            // Use currentUserRef
-            currentUserRef.collection(currentCollection).add({
+            db.collection(currentCollection).add({
                 name: n, 
                 type: t, 
                 createdAt: new Date().toISOString(), 
+                userId: currentUser.uid, 
                 transactions: a ? [{id:Date.now()+'t', amount:a, type:'take', note: initialNote, date: transactionDate}] : [] 
             })
             .then(() => { 
@@ -731,15 +818,40 @@
             });
         }
 
+        // --- SHARED LEDGER LOGIC ---
+        function createSharedLedger() {
+            const name = document.getElementById('connect-name').value;
+            const partnerId = document.getElementById('connect-id').value.trim();
+
+            if(!name || !partnerId) return alert('يرجى إدخال البيانات');
+            if(partnerId === currentUser.uid) return alert('لا يمكنك ربط الحساب بنفسك!');
+
+            showLoading();
+            // Create a document in 'shared_ledgers' with both UIDs in 'participants'
+            db.collection('shared_ledgers').add({
+                name: name, // This name serves as the "Customer Name" for now
+                participants: [currentUser.uid, partnerId],
+                createdAt: new Date().toISOString(),
+                transactions: []
+            }).then(() => {
+                hideLoading();
+                closeModal('modal-connect');
+                alert('تم إنشاء الحساب المشترك بنجاح!');
+            }).catch(e => {
+                hideLoading();
+                alert('خطأ: ' + e.message);
+            });
+        }
+
         function addReminder() {
             const n = document.getElementById('rem-name').value; const c = document.getElementById('rem-count').value;
             if(!n) return;
-            currentUserRef.collection("reminders").add({name:n, count:c});
+            db.collection("reminders").add({name:n, count:c, userId: currentUser.uid});
             document.getElementById('rem-name').value = ''; document.getElementById('rem-count').value = '';
         }
 
         function askDeleteReminder(id) { reminderToDelete = id; openModal('modal-delete-reminder'); }
-        function confirmDeleteRem() { if(reminderToDelete) { currentUserRef.collection("reminders").doc(reminderToDelete).delete(); closeModal('modal-delete-reminder'); } }
+        function confirmDeleteRem() { if(reminderToDelete) { db.collection("reminders").doc(reminderToDelete).delete(); closeModal('modal-delete-reminder'); } }
 
         function openDetails(id) { 
             currentId = id; const c = customers.find(x => x.id === id); if(!c) return; 
@@ -767,18 +879,24 @@
             
             const transDate = dVal ? new Date(dVal).toISOString() : new Date().toISOString();
 
+            // Check if currentCollection is customers/library or shared
+            // We use the same update logic because we structured shared_ledgers similarly (with 'transactions' array)
             const c = customers.find(x => x.id === currentId); 
             const newTrans = [...(c.transactions || []), { 
                 id: Date.now().toString(), 
                 amount:a, 
                 type:transMode, 
                 note:n, 
-                date: transDate 
+                date: transDate,
+                by: currentUser.uid // Track who added it (useful for shared)
             }];
             
             showLoading(); 
-            currentUserRef.collection(currentCollection).doc(currentId).update({ transactions: newTrans }).then(() => { 
-                hideLoading(); document.getElementById('t-amount').value = ''; document.getElementById('t-note').value = ''; document.getElementById('t-date').value = '';
+            db.collection(currentCollection).doc(currentId).update({ transactions: newTrans }).then(() => { 
+                hideLoading(); 
+                document.getElementById('t-amount').value = ''; 
+                document.getElementById('t-note').value = ''; 
+                document.getElementById('t-date').value = '';
             });
         }
 
@@ -787,8 +905,49 @@
             const enteredPin = document.getElementById('pin-input').value;
             if(enteredPin === '1988') {
                 showLoading();
-                currentUserRef.collection(currentCollection).doc(currentId).delete().then(() => { hideLoading(); closeModal('modal-pin'); closeModal('modal-details'); alert('تم الحذف بنجاح.'); });
+                db.collection(currentCollection).doc(currentId).delete().then(() => { hideLoading(); closeModal('modal-pin'); closeModal('modal-details'); alert('تم الحذف بنجاح.'); });
             } else { alert('خطأ: الرمز السري غير صحيح!'); document.getElementById('pin-input').value = ''; }
+        }
+
+        // --- Admin Claim Function ---
+        async function claimLegacyData() {
+            if(!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+            const status = document.getElementById('claim-status');
+            status.innerText = "جاري المعالجة...";
+            
+            try {
+                const cols = ['customers', 'library', 'reminders', 'general_reminders'];
+                let count = 0;
+                for (const colName of cols) {
+                    const snap = await db.collection(colName).get();
+                    const batch = db.batch();
+                    let batchCount = 0;
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        if (!data.userId) {
+                            batch.update(doc.ref, { userId: currentUser.uid });
+                            batchCount++; count++;
+                        }
+                    });
+                    if (batchCount > 0) await batch.commit();
+                }
+                status.innerText = `تم ربط ${count} سجل بحسابك بنجاح!`;
+                setTimeout(() => window.location.reload(), 2000);
+            } catch (e) {
+                status.innerText = "حدث خطأ: " + e.message;
+            }
+        }
+
+        // --- Copy ID ---
+        function copyMyID() {
+            const idText = document.getElementById('user-digital-id').innerText;
+            if(idText) {
+                navigator.clipboard.writeText(idText).then(() => {
+                    alert("تم نسخ المعرف الرقمي: " + idText);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+            }
         }
 
         // --- Print Logic ---
@@ -836,8 +995,17 @@
             if(data.length === 0) { list.innerHTML = '<div style="padding:1rem;text-align:center;color:#64748b;">القائمة فارغة</div>'; } else { list.innerHTML = data.map(c => `<div class="stat-list-item" onclick="closeModal('modal-stats'); openDetails('${c.id}')"><span class="font-bold">${c.name}</span><span class="font-black" dir="ltr" style="color:${view==='debtors'?'#ef4444':'#22c55e'}">${getBal(c).toLocaleString()}</span></div>`).join(''); }
             openModal('modal-stats');
         }
-        function openSettings() { document.getElementById('set-warn').value = settings.warn; document.getElementById('set-danger').value = settings.danger; openModal('modal-settings'); }
-        function saveSettings() { const w = parseInt(document.getElementById('set-warn').value); const d = parseInt(document.getElementById('set-danger').value); currentUserRef.collection("config").doc("settings").set({warn: w, danger: d}); closeModal('modal-settings'); }
+
+        function openSettings() {
+            if(currentUser) {
+                document.getElementById('user-digital-id').innerText = currentUser.uid;
+            }
+            document.getElementById('set-warn').value = settings.warn; 
+            document.getElementById('set-danger').value = settings.danger; 
+            openModal('modal-settings'); 
+        }
+        
+        function saveSettings() { const w = parseInt(document.getElementById('set-warn').value); const d = parseInt(document.getElementById('set-danger').value); db.collection("config").doc("settings").set({warn: w, danger: d}); closeModal('modal-settings'); }
         
         document.getElementById('search-input').onkeyup = renderCustomers;
     </script>
