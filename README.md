@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (التحقق من التكرار)</title>
+    <title>تتبع الكريدي (حسابات خاصة)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -137,14 +137,14 @@
         .badge-container { position: relative; display: inline-block; }
         .notification-badge { position: absolute; top: -5px; right: -5px; background-color: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; border: 2px solid white; display: none; }
 
-        /* Suggestions List for Duplicate Names */
+        /* Suggestions List */
         #name-suggestions {
             background: #fff1f2;
             border: 2px solid #fecaca;
             border-radius: 12px;
             padding: 10px;
             margin-bottom: 10px;
-            display: none; /* Hidden by default */
+            display: none;
         }
         .suggestion-item {
             padding: 8px;
@@ -317,7 +317,6 @@
             <h2 class="text-xl font-black">إضافة زبون <span id="add-mode-title" style="font-size:0.7em; color:var(--primary);">(محل)</span></h2>
             
             <input id="new-name" placeholder="الاسم الكامل" oninput="checkSimilarNames()" autocomplete="off">
-            <!-- قائمة الاقتراحات (تظهر عند وجود تشابه) -->
             <div id="name-suggestions"></div>
 
             <input id="new-type" placeholder="نوع الكريدي (اختياري)">
@@ -437,7 +436,8 @@
 
         let customers = [], reminders = [], generalReminders = [], settings = {warn: 30, danger: 45}, currentId = null, transMode = 'take';
         let reminderToDelete = null;
-        let currentCollection = 'customers'; // Default collection
+        let currentCollection = 'customers'; // Default collection (changes based on tab)
+        let currentUserRef = null; // Reference to user specific document
         let unsubscribeCustomers = null; // To handle listener switching
 
         // Colors
@@ -467,7 +467,6 @@
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { 
             document.getElementById(id).classList.add('hidden'); 
-            // Clear suggestions when modal closes
             if(id === 'modal-add') {
                 document.getElementById('name-suggestions').style.display = 'none';
                 document.getElementById('new-name').value = '';
@@ -487,10 +486,13 @@
             if (user) {
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
+                // Initialize user reference
+                currentUserRef = db.collection('users').doc(user.uid);
                 initApp();
             } else {
                 document.getElementById('auth-screen').style.display = 'flex';
                 document.getElementById('app-content').style.display = 'none';
+                currentUserRef = null;
                 showView('login');
             }
         });
@@ -527,16 +529,26 @@
 
         function logout() { auth.signOut(); }
 
-        // --- APP LOGIC ---
+        // --- APP LOGIC (Scoped to User) ---
         function initApp() {
+            if (!currentUserRef) return;
             showLoading();
-            loadCollection(); // Load default
-            db.collection("reminders").onSnapshot(snap => { reminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()})); renderReminders(); });
-            db.collection("general_reminders").orderBy("createdAt", "desc").onSnapshot(snap => {
+            loadCollection(); // Load default tab data
+            
+            // Listen to User Specific Reminders
+            currentUserRef.collection("reminders").onSnapshot(snap => { reminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()})); renderReminders(); });
+            
+            // Listen to User Specific General Reminders
+            currentUserRef.collection("general_reminders").orderBy("createdAt", "desc").onSnapshot(snap => {
                 generalReminders = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
                 renderGeneralReminders();
             });
-            db.collection("config").doc("settings").onSnapshot(doc => { if(doc.exists) settings = doc.data(); else db.collection("config").doc("settings").set(settings); });
+
+            // Listen to User Specific Settings
+            currentUserRef.collection("config").doc("settings").onSnapshot(doc => { 
+                if(doc.exists) settings = doc.data(); 
+                else currentUserRef.collection("config").doc("settings").set(settings); 
+            });
         }
 
         // --- GENERAL REMINDERS LOGIC ---
@@ -544,11 +556,11 @@
         function addGeneralReminder() {
             const text = document.getElementById('new-gen-task').value;
             if(!text) return;
-            db.collection('general_reminders').add({ text: text, isDone: false, createdAt: new Date().toISOString() });
+            currentUserRef.collection('general_reminders').add({ text: text, isDone: false, createdAt: new Date().toISOString() });
             document.getElementById('new-gen-task').value = '';
         }
-        function toggleGeneralReminder(id, currentStatus) { db.collection('general_reminders').doc(id).update({ isDone: !currentStatus }); }
-        function deleteGeneralReminder(id) { if(confirm('حذف هذا التذكير؟')) { db.collection('general_reminders').doc(id).delete(); } }
+        function toggleGeneralReminder(id, currentStatus) { currentUserRef.collection('general_reminders').doc(id).update({ isDone: !currentStatus }); }
+        function deleteGeneralReminder(id) { if(confirm('حذف هذا التذكير؟')) { currentUserRef.collection('general_reminders').doc(id).delete(); } }
         function renderGeneralReminders() {
             const list = document.getElementById('general-reminders-list');
             const badge = document.getElementById('header-reminder-count');
@@ -585,9 +597,11 @@
         }
 
         function loadCollection() {
+            if (!currentUserRef) return;
             showLoading();
             if(unsubscribeCustomers) unsubscribeCustomers(); // Stop listening to old
-            unsubscribeCustomers = db.collection(currentCollection).onSnapshot(snap => {
+            // Using user scoped collection
+            unsubscribeCustomers = currentUserRef.collection(currentCollection).onSnapshot(snap => {
                 customers = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
                 renderAll(); 
                 hideLoading();
@@ -672,7 +686,6 @@
                 return;
             }
 
-            // Find matching names
             const matches = customers.filter(c => c.name.toLowerCase().includes(input));
 
             if(matches.length > 0) {
@@ -682,7 +695,6 @@
                     div.className = 'suggestion-item';
                     div.innerHTML = `<span>موجود: ${c.name}</span> <span style="font-size:0.7rem">(${getBal(c)})</span>`;
                     div.onclick = () => {
-                        // If clicked, open existing customer directly
                         closeModal('modal-add');
                         openDetails(c.id);
                     };
@@ -702,13 +714,12 @@
             
             if(!n) return alert('أدخل الاسم');
             
-            // Check logic inside save just in case (optional, but UI warning is usually enough)
-            
             const initialNote = t ? t : 'رصيد افتتاحي';
             const transactionDate = dateInput ? new Date(dateInput).toISOString() : new Date().toISOString();
 
             showLoading();
-            db.collection(currentCollection).add({
+            // Use currentUserRef
+            currentUserRef.collection(currentCollection).add({
                 name: n, 
                 type: t, 
                 createdAt: new Date().toISOString(), 
@@ -717,24 +728,23 @@
             .then(() => { 
                 hideLoading(); 
                 closeModal('modal-add'); 
-                // Clear form is handled in closeModal
             });
         }
 
         function addReminder() {
             const n = document.getElementById('rem-name').value; const c = document.getElementById('rem-count').value;
             if(!n) return;
-            db.collection("reminders").add({name:n, count:c});
+            currentUserRef.collection("reminders").add({name:n, count:c});
             document.getElementById('rem-name').value = ''; document.getElementById('rem-count').value = '';
         }
 
         function askDeleteReminder(id) { reminderToDelete = id; openModal('modal-delete-reminder'); }
-        function confirmDeleteRem() { if(reminderToDelete) { db.collection("reminders").doc(reminderToDelete).delete(); closeModal('modal-delete-reminder'); } }
+        function confirmDeleteRem() { if(reminderToDelete) { currentUserRef.collection("reminders").doc(reminderToDelete).delete(); closeModal('modal-delete-reminder'); } }
 
         function openDetails(id) { 
             currentId = id; const c = customers.find(x => x.id === id); if(!c) return; 
             document.getElementById('d-name').innerText = c.name; document.getElementById('d-type').innerText = c.type || 'عام'; 
-            document.getElementById('t-date').value = ''; // Reset date
+            document.getElementById('t-date').value = ''; 
             renderDetails(c); openModal('modal-details'); 
         }
 
@@ -752,12 +762,22 @@
             const a = parseFloat(document.getElementById('t-amount').value); 
             const n = document.getElementById('t-note').value || (transMode==='take'?'كريدي':'دفعة');
             const dVal = document.getElementById('t-date').value;
+            
             if(!a || !currentId) return;
+            
             const transDate = dVal ? new Date(dVal).toISOString() : new Date().toISOString();
+
             const c = customers.find(x => x.id === currentId); 
-            const newTrans = [...(c.transactions || []), { id: Date.now().toString(), amount:a, type:transMode, note:n, date: transDate }];
+            const newTrans = [...(c.transactions || []), { 
+                id: Date.now().toString(), 
+                amount:a, 
+                type:transMode, 
+                note:n, 
+                date: transDate 
+            }];
+            
             showLoading(); 
-            db.collection(currentCollection).doc(currentId).update({ transactions: newTrans }).then(() => { 
+            currentUserRef.collection(currentCollection).doc(currentId).update({ transactions: newTrans }).then(() => { 
                 hideLoading(); document.getElementById('t-amount').value = ''; document.getElementById('t-note').value = ''; document.getElementById('t-date').value = '';
             });
         }
@@ -767,7 +787,7 @@
             const enteredPin = document.getElementById('pin-input').value;
             if(enteredPin === '1988') {
                 showLoading();
-                db.collection(currentCollection).doc(currentId).delete().then(() => { hideLoading(); closeModal('modal-pin'); closeModal('modal-details'); alert('تم الحذف بنجاح.'); });
+                currentUserRef.collection(currentCollection).doc(currentId).delete().then(() => { hideLoading(); closeModal('modal-pin'); closeModal('modal-details'); alert('تم الحذف بنجاح.'); });
             } else { alert('خطأ: الرمز السري غير صحيح!'); document.getElementById('pin-input').value = ''; }
         }
 
@@ -817,7 +837,7 @@
             openModal('modal-stats');
         }
         function openSettings() { document.getElementById('set-warn').value = settings.warn; document.getElementById('set-danger').value = settings.danger; openModal('modal-settings'); }
-        function saveSettings() { const w = parseInt(document.getElementById('set-warn').value); const d = parseInt(document.getElementById('set-danger').value); db.collection("config").doc("settings").set({warn: w, danger: d}); closeModal('modal-settings'); }
+        function saveSettings() { const w = parseInt(document.getElementById('set-warn').value); const d = parseInt(document.getElementById('set-danger').value); currentUserRef.collection("config").doc("settings").set({warn: w, danger: d}); closeModal('modal-settings'); }
         
         document.getElementById('search-input').onkeyup = renderCustomers;
     </script>
