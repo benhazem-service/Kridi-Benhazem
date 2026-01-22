@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تتبع الكريدي (دردشة الشركاء)</title>
+    <title>تتبع الكريدي (تصميم الدردشة)</title>
     
     <!-- مكتبات Firebase Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -37,6 +37,11 @@
         .error-msg { color: var(--danger); margin-top: 10px; font-weight: bold; display: none; background: var(--danger-light); padding: 10px; border-radius: 8px; font-size: 0.85rem; }
         .success-msg { color: var(--success); margin-top: 10px; font-weight: bold; display: none; background: var(--success-light); padding: 10px; border-radius: 8px; font-size: 0.85rem; }
 
+        /* Password Wrapper */
+        .password-wrapper { position: relative; width: 100%; margin-bottom: 15px; }
+        .password-wrapper .auth-input { margin-bottom: 0; padding-left: 45px; } 
+        .password-toggle { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-sub); padding: 5px; z-index: 10; }
+
         #app-content { display: none; }
 
         /* General UI */
@@ -56,69 +61,81 @@
         .stat-box.debtors { background: var(--danger-light); color: var(--danger); }
         .stat-box.clear { background: var(--success-light); color: var(--success); }
         
-        .reminder-section { margin: 0 1rem; background: var(--bg-surface); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); }
-        .reminder-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-body); border-radius: 10px; margin-bottom: 0.5rem; }
-        
+        /* Reminder Accordion Style */
+        .reminder-section { margin: 0 1rem; background: var(--bg-surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .reminder-header { padding: 1rem; background: var(--bg-surface); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+        .reminder-header:active { background: #f8fafc; }
+        .reminder-body { padding: 1rem; border-top: 1px solid var(--border); background: #fdfdfd; display: none; }
+        .reminder-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 0.5rem; }
+        .count-badge { background: var(--text-sub); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; font-weight: bold; margin-right: 8px; transition: 0.3s; }
+        .count-badge.has-items { background: var(--danger); }
+        .arrow-icon { transition: transform 0.3s; }
+        .arrow-icon.open { transform: rotate(180deg); }
+
         .search-bar { margin: 1rem; position: relative; }
         .search-bar input { width: 100%; padding: 1rem 1rem 1rem 3rem; border-radius: var(--radius); border: 2px solid var(--border); font-weight: bold; font-size: 1rem; }
         .search-bar .icon { position: absolute; right: 1rem; top: 1rem; color: var(--text-sub); }
         
-        /* Grid Layout */
-        #customers-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 1rem 20px 1rem; }
-        @media (min-width: 768px) { #customers-list { grid-template-columns: repeat(5, 1fr); } }
+        /* --- LAYOUTS --- */
+        /* Standard Grid for Shop/Lib */
+        .customers-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 1rem 20px 1rem; }
+        @media (min-width: 768px) { .customers-grid { grid-template-columns: repeat(5, 1fr); } }
 
-        /* Card Style */
-        .customer-card {
-            background: var(--bg-surface); padding: 1rem 0.5rem; border-radius: var(--radius);
-            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-            border: 2px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.1s; cursor: pointer;
-            height: 100%; min-height: 140px;
-        }
+        /* Shared List (Vertical) */
+        .shared-list { display: flex; flex-direction: column; gap: 10px; padding: 0 1rem 20px 1rem; }
+
+        /* Card Style (Standard) */
+        .customer-card { background: var(--bg-surface); padding: 1rem 0.5rem; border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 2px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.1s; cursor: pointer; height: 100%; min-height: 140px; }
         .customer-card:active { transform: scale(0.98); background: #f1f5f9; }
         .customer-card.danger { border-color: #fca5a5; background: #fff1f2; }
         .customer-card.warning { border-color: #fdba74; background: #fff7ed; }
         
-        /* Avatar */
-        .customer-avatar {
-            width: 50px; height: 50px; border-radius: 50%; 
-            background: #e0e7ff; color: #4338ca;
-            display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; 
-            margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            line-height: 1;
-        }
-
+        /* Card Avatar */
+        .customer-avatar { width: 50px; height: 50px; border-radius: 50%; background: #e0e7ff; color: #4338ca; display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); line-height: 1; }
         .card-name { font-weight: 900; font-size: 1rem; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
         .card-balance { font-weight: 900; font-size: 1.3rem; letter-spacing: -0.5px; color: var(--text-main); }
         .card-balance span { font-size: 0.7rem; color: var(--text-sub); }
+
+        /* === NEW: SHARED CHAT CARD === */
+        .shared-card {
+            background: white; border-radius: 16px; padding: 15px; 
+            border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+            transition: 0.2s; position: relative;
+        }
+        .shared-card:active { transform: scale(0.98); background: #f8fafc; }
+        
+        .shared-content { flex: 1; min-width: 0; }
+        .shared-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .shared-name { font-weight: 900; font-size: 1.1rem; color: var(--text-main); }
+        .shared-time { font-size: 0.75rem; color: var(--text-sub); }
+        
+        .shared-last-msg {
+            font-size: 0.9rem; color: var(--text-sub);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .shared-last-msg.new { color: var(--text-main); font-weight: bold; }
+        .msg-sender { font-weight: bold; color: var(--primary); }
+
+        .shared-actions { margin-left: 15px; display: flex; align-items: center; }
+        .btn-hide-chat {
+            padding: 8px; border-radius: 50%; border: none; background: #f1f5f9; color: var(--text-sub); cursor: pointer;
+        }
+        .btn-hide-chat:active { background: #e2e8f0; }
+
+        /* Hidden Section */
+        .hidden-section { margin: 20px 1rem; border-top: 1px dashed var(--border); padding-top: 20px; }
+        .hidden-header { font-size: 0.9rem; color: var(--text-sub); font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
         
         /* Tabs System */
         .tabs-wrapper { padding: 10px 1rem 0 1rem; display: flex; gap: 8px; margin-bottom: 10px; overflow-x: auto; }
-        .tab-btn {
-            position: relative;
-            flex: 1; min-width: 100px; padding: 12px; border-radius: 12px; border: none; font-weight: 900; 
-            cursor: pointer; background: white; color: var(--text-sub); border: 2px solid var(--border); 
-            transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.9rem;
-        }
+        .tab-btn { position: relative; flex: 1; min-width: 100px; padding: 12px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer; background: white; color: var(--text-sub); border: 2px solid var(--border); transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.9rem; }
         .tab-btn.active.shop { background: var(--primary); color: white; border-color: var(--primary); }
         .tab-btn.active.library { background: var(--purple); color: white; border-color: var(--purple); }
         .tab-btn.active.shared { background: var(--teal); color: white; border-color: var(--teal); }
-
-        /* TAB BADGES */
-        .tab-badge {
-            background: rgba(0,0,0,0.1);
-            color: inherit;
-            font-size: 0.7rem;
-            padding: 2px 6px;
-            border-radius: 10px;
-            min-width: 20px;
-            text-align: center;
-            display: none;
-        }
-        .tab-btn.active .tab-badge {
-            background: rgba(255,255,255,0.3);
-            color: white;
-        }
+        .tab-badge { background: rgba(0,0,0,0.1); color: inherit; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; min-width: 20px; text-align: center; display: none; }
+        .tab-btn.active .tab-badge { background: rgba(255,255,255,0.3); color: white; }
 
         .fab-btn { position: fixed; bottom: 1.5rem; left: 1.5rem; right: 1.5rem; background: var(--primary); color: white; padding: 1.2rem; border-radius: 1rem; font-weight: 900; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4); border: none; z-index: 30; }
         .fab-btn:active { transform: scale(0.95); }
@@ -149,58 +166,28 @@
         .trans-give .amount-val { color: var(--success); }
         .trans-give .amount-label { background: var(--success-light); color: var(--success); }
         .stat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); cursor: pointer; background: white; }
-        .trans-owner { font-size: 0.65rem; color: var(--text-sub); font-weight: bold; margin-top: 3px; display: flex; align-items: center; gap: 3px; }
-
+        
         .task-item { background: white; padding: 1rem; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); transition: 0.2s; }
         .task-item.done { background: #f0fdf4; border-color: #86efac; }
         .task-item.done .task-text { text-decoration: line-through; opacity: 0.6; }
         .task-text { font-weight: bold; font-size: 1rem; flex: 1; margin-left: 10px; }
         .task-actions { display: flex; gap: 8px; }
         .btn-icon-small { padding: 6px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
         .badge-container { position: relative; display: inline-block; }
         .notification-badge { position: absolute; top: -5px; right: -5px; background-color: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; border: 2px solid white; display: none; }
-
         #name-suggestions { background: #fff1f2; border: 2px solid #fecaca; border-radius: 12px; padding: 10px; margin-bottom: 10px; display: none; }
         .suggestion-item { padding: 8px; color: #b91c1c; font-weight: bold; font-size: 0.9rem; border-bottom: 1px solid #fee2e2; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .suggestion-item:last-child { border-bottom: none; }
-        
         .id-box { background: #1e293b; color: #fff; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; letter-spacing: 1px; margin-top: 5px; word-break: break-all; text-align: center; user-select: all; cursor: pointer; border: 1px dashed #475569; }
         .id-box:active { background: #0f172a; }
-
-        /* Shared Grid Style */
-        .shared-grid { display: grid; grid-template-columns: 1fr; gap: 15px; padding: 0 1rem 20px 1rem; }
-        @media (min-width: 600px) { .shared-grid { grid-template-columns: repeat(2, 1fr); } }
-        .partner-card { background: linear-gradient(135deg, var(--teal) 0%, #115e59 100%); border-radius: 20px; padding: 20px; color: white; position: relative; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.4); transition: transform 0.2s; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; min-height: 180px; display: flex; flex-direction: column; justify-content: space-between; }
-        .partner-card:active { transform: scale(0.97); }
-        .partner-card::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); transform: rotate(30deg); pointer-events: none; }
-        .partner-card-header { display: flex; justify-content: space-between; align-items: flex-start; z-index: 2; position: relative; }
-        .chip { width: 45px; height: 32px; background: linear-gradient(135deg, #fcd34d 0%, #d97706 100%); border-radius: 6px; box-shadow: inset 0 0 5px rgba(0,0,0,0.2); }
-        .wifi-icon { transform: rotate(90deg); opacity: 0.8; stroke: white; }
-        .partner-info { z-index: 2; position: relative; margin-top: 15px; }
-        .partner-label { font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
-        .partner-name { font-size: 1.4rem; font-weight: 900; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2px; }
-        .partner-id-fake { font-family: monospace; font-size: 1rem; opacity: 0.7; letter-spacing: 3px; margin-top: 5px; }
-        .partner-footer { display: flex; justify-content: space-between; align-items: flex-end; z-index: 2; position: relative; margin-top: 15px; }
-        .partner-balance { font-size: 1.8rem; font-weight: 900; line-height: 1; }
-        .partner-status { font-size: 0.8rem; font-weight: bold; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; backdrop-filter: blur(4px); }
 
         /* Shared Notes UI */
         .shared-msg { padding: 10px 14px; border-radius: 12px; margin-bottom: 12px; position: relative; max-width: 85%; line-height: 1.4; word-wrap: break-word; }
         .msg-me { background: #dcfce7; color: #14532d; margin-right: auto; border-bottom-right-radius: 2px; border: 1px solid #86efac; }
         .msg-partner { background: #fee2e2; color: #7f1d1d; margin-left: auto; border-bottom-left-radius: 2px; border: 1px solid #fca5a5; }
-        
         .msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.7rem; opacity: 0.8; }
         .msg-text { font-weight: bold; font-size: 1rem; }
-        
-        .delete-note-btn {
-            position: absolute; top: -8px; left: -8px; 
-            background: #ef4444; color: white; 
-            border-radius: 50%; width: 22px; height: 22px; 
-            border: 2px solid white; cursor: pointer;
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
+        .delete-note-btn { position: absolute; top: -8px; left: -8px; background: #ef4444; color: white; border-radius: 50%; width: 22px; height: 22px; border: 2px solid white; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
         #print-area { display: none; }
         @media print {
@@ -224,7 +211,12 @@
         <div id="login-view" class="auth-card">
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">تسجيل الدخول</h1>
             <input type="email" id="login-email" class="auth-input" placeholder="البريد الإلكتروني" dir="ltr">
-            <input type="password" id="login-pass" class="auth-input" placeholder="كلمة المرور" dir="ltr">
+            <div class="password-wrapper">
+                <input type="password" id="login-pass" class="auth-input" placeholder="كلمة المرور" dir="ltr">
+                <span onclick="togglePassword('login-pass')" class="password-toggle">
+                   <svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </span>
+            </div>
             <div class="checkbox-container"><input type="checkbox" id="remember-me" checked><label for="remember-me">تذكرني</label></div>
             <button onclick="performLogin()" class="auth-btn">دخول</button>
             <div onclick="showView('signup')" class="auth-link">إنشاء حساب جديد</div>
@@ -235,7 +227,12 @@
             <h1 class="font-black text-xl" style="color: var(--primary); margin-bottom: 20px;">حساب جديد</h1>
             <input type="text" id="signup-name" class="auth-input" placeholder="اسم المستخدم (اسم المتجر)">
             <input type="email" id="signup-email" class="auth-input" placeholder="البريد الإلكتروني" dir="ltr">
-            <input type="password" id="signup-pass" class="auth-input" placeholder="كلمة المرور (6 أرقام على الأقل)" dir="ltr">
+            <div class="password-wrapper">
+                <input type="password" id="signup-pass" class="auth-input" placeholder="كلمة المرور (6 أرقام)" dir="ltr">
+                <span onclick="togglePassword('signup-pass')" class="password-toggle">
+                   <svg class="icon" viewBox="0 0 24 24" width="20" height="20"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </span>
+            </div>
             <button onclick="performSignup()" class="auth-btn">تسجيل</button>
             <div onclick="showView('login')" class="auth-link">لديك حساب؟ تسجيل الدخول</div>
             <p id="signup-msg" class="error-msg"></p>
@@ -301,18 +298,24 @@
             </div>
         </div>
 
-        <div class="reminder-section">
-            <div class="flex justify-between items-center" style="margin-bottom: 10px;">
-                <h3 class="font-bold text-sm text-sub flex items-center gap-2">
-                    <svg class="icon" style="width:16px;" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> نواقص (للمتجر)
-                </h3>
+        <!-- Collapsible Reminder Section -->
+        <div class="reminder-section" id="reminder-section" style="display:block;">
+            <div class="reminder-header" onclick="toggleReminders()">
+                <div class="flex gap-2 items-center">
+                    <span class="font-black text-main">نواقص (للمتجر)</span>
+                    <span id="shortage-count" class="count-badge">0</span>
+                </div>
+                <svg class="icon arrow-icon" id="rem-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
-            <div class="flex gap-2" style="margin-bottom: 10px;">
-                <input id="rem-name" placeholder="المنتج" style="padding: 0.6rem;">
-                <input id="rem-count" type="number" placeholder="#" style="width: 60px; padding: 0.6rem;">
-                <button onclick="addReminder()" style="background: var(--primary); color: white; border-radius: 10px; padding: 0 12px; border:none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg></button>
+            
+            <div id="reminder-body" class="reminder-body">
+                <div class="flex gap-2" style="margin-bottom: 10px;">
+                    <input id="rem-name" placeholder="المنتج" style="padding: 0.6rem;">
+                    <input id="rem-count" type="number" placeholder="#" style="width: 60px; padding: 0.6rem;">
+                    <button onclick="addReminder()" style="background: var(--primary); color: white; border-radius: 10px; padding: 0 12px; border:none; cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg></button>
+                </div>
+                <div id="reminders-list"></div>
             </div>
-            <div id="reminders-list"></div>
         </div>
 
         <div class="search-bar">
@@ -321,6 +324,15 @@
         </div>
 
         <div id="customers-list"></div>
+
+        <!-- HIDDEN SHARED SECTION (Container for archived chats) -->
+        <div id="hidden-shared-container" style="display:none;">
+            <div onclick="toggleHiddenShared()" style="text-align:center; padding:15px; cursor:pointer; color:var(--text-sub); border-top:1px dashed var(--border); margin-top:20px; font-weight:bold;">
+                 الأرشيف (مخفي) <span id="hidden-count"></span> 
+                 <svg class="icon" style="width:16px; vertical-align:middle;" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div id="hidden-shared-list" style="display:none;"></div>
+        </div>
 
         <button id="main-fab" class="fab-btn" onclick="openMainAction()">
             <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -435,7 +447,7 @@
                 <div id="d-history" class="history-section"></div>
             </div>
             <button id="btn-delete-customer" onclick="requestPinToDelete()" style="color: var(--danger); background: white; padding: 1rem; border-radius: 12px; font-weight: bold; border: 2px solid var(--danger-light); display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; cursor:pointer;">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg> حذف
+                <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg> حذف الزبون
             </button>
         </div>
     </div>
@@ -477,12 +489,23 @@
     <!-- Settings Modal -->
     <div id="modal-settings" class="modal-overlay hidden">
         <div class="modal-content" style="background: white;">
-            <h2 class="text-xl font-black">الإعدادات</h2>
+            
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-black">الإعدادات</h2>
+                <button onclick="closeModal('modal-settings')" class="btn-icon-small" style="background:#f1f5f9;"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
+
             <label class="font-bold text-sm">تنبيه برتقالي (أيام)</label>
             <input id="set-warn" type="number">
             <label class="font-bold text-sm">تنبيه أحمر (أيام)</label>
             <input id="set-danger" type="number">
             
+            <div style="border-top:1px solid #eee; margin:15px 0;"></div>
+            
+            <!-- Custom Delete PIN Section -->
+            <label class="font-bold text-sm">رمز الحذف (PIN) الجديد:</label>
+            <input id="set-pin" type="text" placeholder="الافتراضي 1988" maxlength="6">
+
             <div style="border-top:1px solid #eee; margin:15px 0;"></div>
             <!-- Digital ID Section -->
             <div class="settings-info" style="text-align: center;">
@@ -526,7 +549,7 @@
 
         db.enablePersistence().catch(err => console.log(err.code));
 
-        let customers = [], reminders = [], generalReminders = [], settings = {warn: 30, danger: 45}, currentId = null, transMode = 'take';
+        let customers = [], reminders = [], generalReminders = [], settings = {warn: 30, danger: 45, deletePin: '1988'}, currentId = null, transMode = 'take';
         let reminderToDelete = null;
         let currentCollection = 'customers'; 
         let unsubscribeCustomers = null; 
@@ -582,6 +605,12 @@
             ['login-view', 'signup-view', 'reset-view'].forEach(v => document.getElementById(v).style.display = 'none');
             document.getElementById(view + '-view').style.display = 'block';
             document.querySelectorAll('.error-msg, .success-msg').forEach(e => e.style.display = 'none');
+        }
+
+        function togglePassword(fieldId) {
+            const input = document.getElementById(fieldId);
+            if(input.type === 'password') input.type = 'text';
+            else input.type = 'password';
         }
 
         // --- AUTH ---
@@ -660,7 +689,13 @@
                 renderGeneralReminders();
             });
 
-            db.collection("config").doc("settings").onSnapshot(doc => { if(doc.exists) settings = doc.data(); else db.collection("config").doc("settings").set(settings); });
+            db.collection("user_settings").doc(currentUser.uid).onSnapshot(doc => { 
+                if(doc.exists) {
+                    settings = { ...settings, ...doc.data() }; 
+                } else {
+                    db.collection("user_settings").doc(currentUser.uid).set(settings);
+                }
+            });
         }
 
         // --- GENERAL REMINDERS LOGIC ---
@@ -691,21 +726,18 @@
 
         // --- TAB COUNTERS ---
         function setupTabCounters() {
-            // Shop Count
             db.collection('customers').where("userId", "==", currentUser.uid).onSnapshot(snap => {
                 const count = snap.size;
                 const el = document.getElementById('badge-shop');
                 el.innerText = count;
                 el.style.display = count > 0 ? 'inline-block' : 'none';
             });
-            // Lib Count
             db.collection('library').where("userId", "==", currentUser.uid).onSnapshot(snap => {
                 const count = snap.size;
                 const el = document.getElementById('badge-lib');
                 el.innerText = count;
                 el.style.display = count > 0 ? 'inline-block' : 'none';
             });
-            // Shared Count
             db.collection('shared_ledgers').where("participants", "array-contains", currentUser.uid).onSnapshot(snap => {
                 const count = snap.size;
                 const el = document.getElementById('badge-shared');
@@ -724,6 +756,10 @@
             
             const reminderSection = document.querySelector('.reminder-section');
             const statsSection = document.getElementById('stats-section');
+            const hiddenSection = document.getElementById('hidden-shared-container');
+
+            // Reset UI states
+            if (hiddenSection) hiddenSection.style.display = 'none';
 
             if(collectionName === 'customers') {
                 document.getElementById('tab-shop').classList.add('active');
@@ -746,7 +782,8 @@
                 document.getElementById('add-mode-title').innerText = '(مشترك)';
                 document.getElementById('fab-text').innerText = 'ربط حساب';
                 reminderSection.style.display = 'none'; 
-                statsSection.style.display = 'none'; // Hide stats for shared
+                statsSection.style.display = 'none'; 
+                if(hiddenSection) hiddenSection.style.display = 'block'; // Show hidden container for shared
                 applyTheme('shared');
             }
             loadCollection();
@@ -764,8 +801,11 @@
             showLoading();
             if(unsubscribeCustomers) unsubscribeCustomers(); 
             
+            // CLEAR DATA
+            customers = [];
+            renderAll();
+
             if (currentCollection === 'shared_ledgers') {
-                // Logic for shared ledgers: query where current user is in participants
                 unsubscribeCustomers = db.collection('shared_ledgers')
                     .where("participants", "array-contains", currentUser.uid)
                     .onSnapshot(snap => {
@@ -774,7 +814,6 @@
                         hideLoading();
                     });
             } else {
-                // Normal logic for private collections
                 unsubscribeCustomers = db.collection(currentCollection)
                     .where("userId", "==", currentUser.uid)
                     .onSnapshot(snap => {
@@ -810,19 +849,60 @@
 
         function renderReminders() {
             const list = document.getElementById('reminders-list');
+            const badge = document.getElementById('shortage-count');
+            
+            badge.innerText = reminders.length;
+            if(reminders.length > 0) badge.classList.add('has-items');
+            else badge.classList.remove('has-items');
+
+            if(reminders.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:10px; color:#aaa; font-size:0.8rem;">لا توجد نواقص حالياً</div>';
+                return;
+            }
+
             list.innerHTML = reminders.map(r => `
                 <div class="reminder-item">
                     <div class="font-bold">${r.name} ${r.count ? `<span style="background:#dbeafe;color:#1e40af;padding:2px 6px;border-radius:6px;font-size:0.8rem">${r.count}</span>` : ''}</div>
                     <button onclick="askDeleteReminder('${r.id}')" style="color:#ef4444;border:none;background:none;cursor:pointer;"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
                 </div>
-            `).join('') || '<div class="text-xs text-sub text-center">القائمة فارغة</div>';
+            `).join('');
         }
+
+        function toggleReminders() {
+            const body = document.getElementById('reminder-body');
+            const arrow = document.getElementById('rem-arrow');
+            if(body.style.display === 'block') {
+                body.style.display = 'none';
+                arrow.classList.remove('open');
+            } else {
+                body.style.display = 'block';
+                arrow.classList.add('open');
+            }
+        }
+
+        function toggleHiddenShared() {
+            const list = document.getElementById('hidden-shared-list');
+            list.style.display = list.style.display === 'none' ? 'grid' : 'none';
+        }
+
+        // --- SHARED HIDE/UNHIDE LOGIC ---
+        function hideSharedLedger(id) {
+             db.collection('shared_ledgers').doc(id).update({ isHidden: true });
+        }
+        
+        function unhideSharedLedger(id) {
+             db.collection('shared_ledgers').doc(id).update({ isHidden: false });
+        }
+
 
         function renderCustomers() {
             const term = document.getElementById('search-input').value.toLowerCase();
             const list = document.getElementById('customers-list');
+            const hiddenContainer = document.getElementById('hidden-shared-container');
+            const hiddenList = document.getElementById('hidden-shared-list');
             
-            const filtered = customers.filter(c => {
+            // Default filtering
+            let filtered = customers.filter(c => {
                 const matchesSearch = c.name.toLowerCase().includes(term) || (c.type||'').toLowerCase().includes(term);
                 const hasBalance = getBal(c) !== 0; 
                 if(term) return matchesSearch; 
@@ -830,29 +910,30 @@
             })
             .sort((a,b) => getDays(b) - getDays(a));
 
-            // USE SPECIAL GRID FOR SHARED
             if(currentCollection === 'shared_ledgers') {
                 list.className = 'shared-grid';
-                if(filtered.length === 0) { list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-sub);">لا توجد حسابات مشتركة</div>'; return; }
+                hiddenList.className = 'shared-grid';
                 
-                list.innerHTML = filtered.map(c => {
-                    const bal = getBal(c);
-                    return `
-                    <div class="partner-card" onclick="openDetails('${c.id}')">
-                        <div class="partner-card-header">
-                            <div class="chip"></div>
-                            <svg class="icon wifi-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
-                        </div>
-                        <div class="partner-info">
-                             <div class="partner-label">حساب مشترك</div>
-                             <div class="partner-name">${c.name}</div>
-                             <div class="partner-id-fake">**** **** **** ${c.id.substr(-4)}</div>
-                        </div>
-                    </div>`;
-                }).join('');
+                // Split active vs hidden
+                const activeShared = filtered.filter(c => !c.isHidden);
+                const hiddenShared = filtered.filter(c => c.isHidden);
                 
+                // Render Active
+                if(activeShared.length === 0) list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-sub);">لا توجد حسابات نشطة</div>';
+                else list.innerHTML = activeShared.map(c => renderPartnerCard(c)).join('');
+
+                // Render Hidden
+                if(hiddenShared.length > 0) {
+                    hiddenContainer.style.display = 'block';
+                    document.getElementById('hidden-count').innerText = `(${hiddenShared.length})`;
+                    hiddenList.innerHTML = hiddenShared.map(c => renderPartnerCard(c, true)).join('');
+                } else {
+                    hiddenContainer.style.display = 'none';
+                }
+
             } else {
-                // NORMAL GRID FOR SHOP/LIBRARY
+                // NORMAL MODE
+                hiddenContainer.style.display = 'none';
                 list.className = 'customers-grid';
                 if(filtered.length === 0) { list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-sub);">لا توجد نتائج</div>'; return; }
                 list.innerHTML = filtered.map(c => {
@@ -877,16 +958,51 @@
             }
         }
 
+        // Helper to render shared card
+        function renderPartnerCard(c, isHidden = false) {
+             const bal = getBal(c);
+             const lastTrans = c.transactions.length > 0 ? c.transactions[c.transactions.length-1] : null;
+             
+             let lastMsg = 'لا توجد رسائل';
+             let lastTime = '';
+             
+             if(lastTrans) {
+                 const isMe = lastTrans.by === currentUser.uid;
+                 const sender = isMe ? 'أنت:' : 'هو:';
+                 lastMsg = `<span class="msg-sender">${sender}</span> ${lastTrans.note}`;
+                 lastTime = new Date(lastTrans.date).toLocaleTimeString('ar-MA', {hour:'2-digit', minute:'2-digit'});
+             }
+
+             // Determine hide/unhide button
+             const actionBtn = isHidden 
+                ? `<button onclick="event.stopPropagation(); unhideSharedLedger('${c.id}')" class="btn-hide-chat" title="استرجاع"><svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>`
+                : `<button onclick="event.stopPropagation(); hideSharedLedger('${c.id}')" class="btn-hide-chat" title="إخفاء"><svg class="icon" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button>`;
+
+             return `
+             <div class="shared-card" onclick="openDetails('${c.id}')" style="opacity:${isHidden ? '0.7' : '1'}">
+                 <div class="shared-content">
+                     <div class="shared-header">
+                         <div class="shared-name">${c.name}</div>
+                         <div class="shared-time">${lastTime}</div>
+                     </div>
+                     <div class="shared-last-msg ${lastTrans && lastTrans.by !== currentUser.uid ? 'new' : ''}">
+                         ${lastMsg}
+                     </div>
+                 </div>
+                 <div class="shared-actions">
+                     ${actionBtn}
+                 </div>
+             </div>`;
+        }
+
+
         // --- NAME DUPLICATION CHECK ---
         function checkSimilarNames() {
             const input = document.getElementById('new-name').value.trim().toLowerCase();
             const suggestionsBox = document.getElementById('name-suggestions');
             suggestionsBox.innerHTML = '';
-            
             if(input.length < 2) { suggestionsBox.style.display = 'none'; return; }
-
             const matches = customers.filter(c => c.name.toLowerCase().includes(input));
-
             if(matches.length > 0) {
                 suggestionsBox.style.display = 'block';
                 matches.forEach(c => {
@@ -905,49 +1021,26 @@
             const t = document.getElementById('new-type').value;
             const a = parseFloat(document.getElementById('new-amount').value);
             const dateInput = document.getElementById('new-date').value;
-            
             if(!n) return alert('أدخل الاسم');
-            
             const initialNote = t ? t : 'رصيد افتتاحي';
             const transactionDate = dateInput ? new Date(dateInput).toISOString() : new Date().toISOString();
-
             showLoading();
             db.collection(currentCollection).add({
-                name: n, 
-                type: t, 
-                createdAt: new Date().toISOString(), 
-                userId: currentUser.uid, 
+                name: n, type: t, createdAt: new Date().toISOString(), userId: currentUser.uid, 
                 transactions: a ? [{id:Date.now()+'t', amount:a, type:'take', note: initialNote, date: transactionDate}] : [] 
-            })
-            .then(() => { 
-                hideLoading(); 
-                closeModal('modal-add'); 
-            });
+            }).then(() => { hideLoading(); closeModal('modal-add'); });
         }
 
         // --- SHARED LEDGER LOGIC ---
         function createSharedLedger() {
             const name = document.getElementById('connect-name').value;
             const partnerId = document.getElementById('connect-id').value.trim();
-
             if(!name || !partnerId) return alert('يرجى إدخال البيانات');
             if(partnerId === currentUser.uid) return alert('لا يمكنك ربط الحساب بنفسك!');
-
             showLoading();
-            // Create a document in 'shared_ledgers' with both UIDs in 'participants'
             db.collection('shared_ledgers').add({
-                name: name, // This name serves as the "Customer Name" for now
-                participants: [currentUser.uid, partnerId],
-                createdAt: new Date().toISOString(),
-                transactions: []
-            }).then(() => {
-                hideLoading();
-                closeModal('modal-connect');
-                alert('تم إنشاء الحساب المشترك بنجاح!');
-            }).catch(e => {
-                hideLoading();
-                alert('خطأ: ' + e.message);
-            });
+                name: name, participants: [currentUser.uid, partnerId], createdAt: new Date().toISOString(), transactions: [], isHidden: false // Default not hidden
+            }).then(() => { hideLoading(); closeModal('modal-connect'); alert('تم إنشاء الحساب المشترك بنجاح!'); }).catch(e => { hideLoading(); alert('خطأ: ' + e.message); });
         }
 
         function addReminder() {
@@ -965,7 +1058,6 @@
             document.getElementById('d-name').innerText = c.name; document.getElementById('d-type').innerText = c.type || 'عام'; 
             document.getElementById('t-date').value = ''; 
             
-            // Adjust UI based on mode
             const amountInput = document.getElementById('t-amount');
             const actionsSection = document.getElementById('actions-section');
             const balanceSection = document.getElementById('balance-section');
@@ -973,15 +1065,13 @@
             const deleteBtn = document.getElementById('btn-delete-customer');
 
             if(currentCollection === 'shared_ledgers') {
-                // SHARED MODE: Hide amounts, show chat style
                 amountInput.style.display = 'none';
                 actionsSection.style.display = 'none';
                 balanceSection.style.display = 'none';
-                deleteBtn.style.display = 'none'; // Hide delete
+                deleteBtn.style.display = 'none'; 
                 addBtn.innerText = 'إرسال ملاحظة';
                 document.getElementById('t-note').placeholder = 'اكتب رسالة...';
             } else {
-                // NORMAL MODE
                 amountInput.style.display = 'block';
                 actionsSection.style.display = 'grid';
                 balanceSection.style.display = 'block';
@@ -989,42 +1079,26 @@
                 addBtn.innerText = 'تسجيل العملية';
                 document.getElementById('t-note').placeholder = 'ملاحظة';
             }
-
             renderDetails(c); openModal('modal-details'); 
         }
 
         function renderDetails(c) {
-            if(currentCollection !== 'shared_ledgers') {
-                document.getElementById('d-balance').innerText = getBal(c).toLocaleString();
-            }
-            
+            if(currentCollection !== 'shared_ledgers') { document.getElementById('d-balance').innerText = getBal(c).toLocaleString(); }
             document.getElementById('d-history').innerHTML = [...c.transactions].reverse().map(t => {
                 if (currentCollection === 'shared_ledgers') {
-                    // CHAT STYLE RENDER
                     const isMe = t.by === currentUser.uid;
                     const msgClass = isMe ? 'msg-me' : 'msg-partner';
-                    
-                    // Delete button only for MY messages
                     const deleteBtn = isMe ? `<button onclick="deleteSharedNote('${t.id}')" class="delete-note-btn">&times;</button>` : '';
-
                     return `
                         <div class="shared-msg ${msgClass}">
                             ${deleteBtn}
-                            <div class="msg-header">
-                                <span>${isMe ? 'أنا' : 'الشريك'}</span>
-                                <span>${new Date(t.date).toLocaleTimeString('ar-MA', {hour:'2-digit', minute:'2-digit'})}</span>
-                            </div>
+                            <div class="msg-header"><span>${isMe ? 'أنا' : 'الشريك'}</span><span>${new Date(t.date).toLocaleTimeString('ar-MA', {hour:'2-digit', minute:'2-digit'})}</span></div>
                             <div class="msg-text">${t.note}</div>
-                        </div>
-                    `;
+                        </div>`;
                 } else {
-                    // STANDARD CREDIT RENDER
                     return `
                     <div class="trans-card ${t.type === 'take' ? 'trans-take' : 'trans-give'}">
-                        <div class="trans-info">
-                            <div class="trans-note">${t.note}</div>
-                            <div class="trans-date">${new Date(t.date).toLocaleDateString('ar-MA')}</div>
-                        </div>
+                        <div class="trans-info"><div class="trans-note">${t.note}</div><div class="trans-date">${new Date(t.date).toLocaleDateString('ar-MA')}</div></div>
                         <div class="trans-amount"><span class="amount-val" dir="ltr">${t.amount.toLocaleString()}</span><span class="amount-label">${t.type === 'take' ? 'عليه ⬆' : 'له ⬇'}</span></div>
                     </div>`;
                 }
@@ -1035,66 +1109,45 @@
         
         function addTransaction() {
             const n = document.getElementById('t-note').value;
-            // For shared: note is required, amount is 0. For normal: amount required if note empty (usually)
-            
             let a = 0;
-            if(currentCollection !== 'shared_ledgers') {
-                a = parseFloat(document.getElementById('t-amount').value);
-                if(!a && !n) return; // Must have something
-            } else {
-                if(!n) return; // Note required for shared
-            }
-
+            if(currentCollection !== 'shared_ledgers') { a = parseFloat(document.getElementById('t-amount').value); if(!a && !n) return; } else { if(!n) return; }
             const dVal = document.getElementById('t-date').value;
             const transDate = dVal ? new Date(dVal).toISOString() : new Date().toISOString();
-
             const c = customers.find(x => x.id === currentId); 
-            const newTrans = [...(c.transactions || []), { 
-                id: Date.now().toString(), 
-                amount: a || 0, 
-                type:transMode, 
-                note:n, 
-                date: transDate,
-                by: currentUser.uid 
-            }];
+            const newTrans = [...(c.transactions || []), { id: Date.now().toString(), amount: a || 0, type:transMode, note:n, date: transDate, by: currentUser.uid }];
             
             showLoading(); 
-            db.collection(currentCollection).doc(currentId).update({ transactions: newTrans }).then(() => { 
-                hideLoading(); 
-                document.getElementById('t-amount').value = ''; 
-                document.getElementById('t-note').value = ''; 
-                document.getElementById('t-date').value = '';
+            // Update logic - force isHidden to false when adding msg
+            const updateData = { transactions: newTrans };
+            if(currentCollection === 'shared_ledgers') { updateData.isHidden = false; }
+
+            db.collection(currentCollection).doc(currentId).update(updateData).then(() => { 
+                hideLoading(); document.getElementById('t-amount').value = ''; document.getElementById('t-note').value = ''; document.getElementById('t-date').value = '';
             });
         }
 
-        // --- Delete Shared Note Logic ---
         function deleteSharedNote(transId) {
             if(!confirm("حذف هذه الملاحظة؟")) return;
             const c = customers.find(x => x.id === currentId);
             const newTrans = c.transactions.filter(t => t.id !== transId);
-            
             showLoading();
-            db.collection(currentCollection).doc(currentId).update({ transactions: newTrans }).then(() => {
-                hideLoading();
-            });
+            db.collection(currentCollection).doc(currentId).update({ transactions: newTrans }).then(() => { hideLoading(); });
         }
-
 
         function requestPinToDelete() { document.getElementById('pin-input').value = ''; openModal('modal-pin'); }
         function confirmDeleteCustomer() {
             const enteredPin = document.getElementById('pin-input').value;
-            if(enteredPin === '1988') {
+            const correctPin = settings.deletePin || '1988'; 
+            if(enteredPin === correctPin) {
                 showLoading();
                 db.collection(currentCollection).doc(currentId).delete().then(() => { hideLoading(); closeModal('modal-pin'); closeModal('modal-details'); alert('تم الحذف بنجاح.'); });
             } else { alert('خطأ: الرمز السري غير صحيح!'); document.getElementById('pin-input').value = ''; }
         }
 
-        // --- Admin Claim Function ---
         async function claimLegacyData() {
             if(!currentUser || currentUser.email !== ADMIN_EMAIL) return;
             const status = document.getElementById('claim-status');
             status.innerText = "جاري المعالجة...";
-            
             try {
                 const cols = ['customers', 'library', 'reminders', 'general_reminders'];
                 let count = 0;
@@ -1102,35 +1155,18 @@
                     const snap = await db.collection(colName).get();
                     const batch = db.batch();
                     let batchCount = 0;
-                    snap.forEach(doc => {
-                        const data = doc.data();
-                        if (!data.userId) {
-                            batch.update(doc.ref, { userId: currentUser.uid });
-                            batchCount++; count++;
-                        }
-                    });
+                    snap.forEach(doc => { const data = doc.data(); if (!data.userId) { batch.update(doc.ref, { userId: currentUser.uid }); batchCount++; count++; } });
                     if (batchCount > 0) await batch.commit();
                 }
-                status.innerText = `تم ربط ${count} سجل بحسابك بنجاح!`;
-                setTimeout(() => window.location.reload(), 2000);
-            } catch (e) {
-                status.innerText = "حدث خطأ: " + e.message;
-            }
+                status.innerText = `تم ربط ${count} سجل بحسابك بنجاح!`; setTimeout(() => window.location.reload(), 2000);
+            } catch (e) { status.innerText = "حدث خطأ: " + e.message; }
         }
 
-        // --- Copy ID ---
         function copyMyID() {
             const idText = document.getElementById('user-digital-id').innerText;
-            if(idText) {
-                navigator.clipboard.writeText(idText).then(() => {
-                    alert("تم نسخ المعرف الرقمي: " + idText);
-                }).catch(err => {
-                    console.error('Failed to copy: ', err);
-                });
-            }
+            if(idText) { navigator.clipboard.writeText(idText).then(() => { alert("تم نسخ المعرف الرقمي: " + idText); }).catch(err => { console.error('Failed to copy: ', err); }); }
         }
 
-        // --- Print Logic ---
         function openPrintModal() { openModal('modal-print'); }
         function generateReport(type) {
             const printArea = document.getElementById('print-area');
@@ -1175,18 +1211,18 @@
             if(data.length === 0) { list.innerHTML = '<div style="padding:1rem;text-align:center;color:#64748b;">القائمة فارغة</div>'; } else { list.innerHTML = data.map(c => `<div class="stat-list-item" onclick="closeModal('modal-stats'); openDetails('${c.id}')"><span class="font-bold">${c.name}</span><span class="font-black" dir="ltr" style="color:${view==='debtors'?'#ef4444':'#22c55e'}">${getBal(c).toLocaleString()}</span></div>`).join(''); }
             openModal('modal-stats');
         }
-
         function openSettings() {
-            if(currentUser) {
-                document.getElementById('user-digital-id').innerText = currentUser.uid;
-            }
+            if(currentUser) { document.getElementById('user-digital-id').innerText = currentUser.uid; }
             document.getElementById('set-warn').value = settings.warn; 
-            document.getElementById('set-danger').value = settings.danger; 
+            document.getElementById('set-danger').value = settings.danger;
+            document.getElementById('set-pin').value = settings.deletePin || '';
             openModal('modal-settings'); 
         }
-        
-        function saveSettings() { const w = parseInt(document.getElementById('set-warn').value); const d = parseInt(document.getElementById('set-danger').value); db.collection("config").doc("settings").set({warn: w, danger: d}); closeModal('modal-settings'); }
-        
+        function saveSettings() { 
+            const w = parseInt(document.getElementById('set-warn').value); const d = parseInt(document.getElementById('set-danger').value); const p = document.getElementById('set-pin').value.trim();
+            db.collection("user_settings").doc(currentUser.uid).set({ warn: w, danger: d, deletePin: p || '1988' }); 
+            closeModal('modal-settings'); 
+        }
         document.getElementById('search-input').onkeyup = renderCustomers;
     </script>
 </body>
